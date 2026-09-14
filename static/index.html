@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sale Monitor · Dunkin'</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;0,900;1,800&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --orange:#FF671F; --orange-dk:#e55a15; --magenta:#E91E8C; --magenta-dk:#CE1E7C;
+    --cream:#FFF8DC; --ink:#1C1C1C; --muted:#9ca3af; --label:#b08968;
+    --border:#e8e0d6; --green:#16a34a; --green2:#10b981; --red:#dc2626; --red2:#ef4444;
+    --blue:#3b82f6; --purple:#a855f7;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--cream); color:var(--ink);
+    font-family:'Sarabun','Nunito',sans-serif;
+  }
+  .hidden{display:none !important}
+
+  /* ── topbar ── */
+  .topbar{
+    background:#fff; border-bottom:2px solid #f0ece6; padding:14px 24px;
+    display:flex; align-items:center; gap:16px; flex-wrap:wrap; position:sticky; top:0; z-index:10;
+  }
+  .brand{ font-family:'Nunito',sans-serif; font-weight:900; font-size:18px; color:var(--orange);
+          display:flex; align-items:center; gap:8px; margin-right:8px; }
+  .field{ display:flex; flex-direction:column; gap:3px; }
+  .field label{ font-family:'Nunito',sans-serif; font-size:10px; font-weight:800; letter-spacing:1px;
+                text-transform:uppercase; color:var(--muted); }
+  .field select, .field input{
+    padding:8px 10px; border:1.5px solid var(--border); border-radius:10px;
+    background:var(--cream); font-family:'Sarabun',sans-serif; font-size:13px; color:var(--ink);
+  }
+  .topbar .spacer{ flex:1; }
+  .chip-btn{
+    border:none; border-radius:25px; padding:9px 18px; font-family:'Nunito',sans-serif;
+    font-weight:800; font-size:12px; letter-spacing:.5px; cursor:pointer; transition:transform .15s;
+  }
+  .chip-btn:hover{ transform:translateY(-1px); }
+  .chip-btn.primary{ background:var(--orange); color:#fff; box-shadow:0 4px 12px rgba(255,103,31,.3); }
+  .chip-btn.primary:hover{ background:var(--orange-dk); }
+  .chip-btn.ghost{ background:#fff; color:var(--muted); border:1.5px solid var(--border); }
+  .auto-toggle{ display:flex; align-items:center; gap:6px; font-size:12px; color:var(--muted); font-weight:700; }
+  .who{ font-size:12px; color:var(--muted); }
+
+  main{ padding:20px 24px 60px; max-width:1400px; margin:0 auto; }
+
+  /* ── hero ── */
+  .banner{
+    background:linear-gradient(90deg,#FFF4EC,#FDECF4); border:1px solid #f6d9c9; border-radius:16px;
+    padding:16px 22px; margin-bottom:14px; display:flex; align-items:center; justify-content:space-between;
+    flex-wrap:wrap; gap:14px;
+  }
+  .banner .left{ display:flex; align-items:center; gap:26px; flex-wrap:wrap; }
+  .banner .right{ display:flex; gap:26px; text-align:right; }
+  .lb{ color:var(--label); font-size:12px; font-weight:700; font-family:'Nunito',sans-serif; }
+  .arrow{ color:var(--orange); font-size:22px; }
+  .big{ font-size:26px; font-weight:800; font-family:'Nunito',sans-serif; }
+
+  .kpi-row{ display:flex; gap:14px; margin-bottom:16px; flex-wrap:wrap; }
+  .card{ background:#fff; border:1px solid #f0ece6; border-radius:14px; padding:14px 18px;
+         box-shadow:0 1px 3px rgba(0,0,0,.04); flex:1; min-width:150px; }
+  .card .val{ font-size:24px; font-weight:800; font-family:'Nunito',sans-serif; }
+
+  .pace-head{ display:flex; align-items:baseline; gap:10px; margin-bottom:6px; flex-wrap:wrap; }
+  .pace-head .t{ font-size:18px; font-weight:800; color:var(--orange); font-family:'Nunito',sans-serif; }
+  .pace-head .s{ color:var(--muted); font-size:13px; }
+  .pace-head .live{ margin-left:auto; color:var(--muted); font-size:12px; }
+  .pace-row{ display:flex; gap:14px; flex-wrap:wrap; }
+  .pace-row .val{ font-size:28px; }
+  .tag-up{ color:var(--green); font-size:12px; background:#ecfdf3; border-radius:6px; padding:1px 6px;
+           display:inline-block; margin-top:2px; }
+
+  hr.div{ border:none; border-top:1px solid #ede8e1; margin:22px 0; }
+
+  .section-title{ font-weight:800; color:var(--orange); font-size:18px; margin-bottom:2px;
+                   font-family:'Nunito',sans-serif; }
+  .section-sub{ font-size:12px; color:var(--muted); margin-bottom:10px; }
+
+  .chart-box{ background:#fff; border-radius:16px; padding:16px; box-shadow:0 2px 20px rgba(0,0,0,.06); }
+  .two-col{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media (max-width:860px){ .two-col{ grid-template-columns:1fr; } }
+
+  table{ width:100%; border-collapse:collapse; font-size:13px; }
+  thead th{ background:#FFF3EC; color:var(--orange); font-family:'Nunito',sans-serif; font-size:11px;
+            font-weight:800; text-transform:uppercase; letter-spacing:.6px; border-bottom:2px solid #FFD9C4;
+            padding:10px 12px; text-align:left; }
+  tbody td{ background:#fff; color:#374151; font-weight:500; border-bottom:1px solid #FFF8DC; padding:9px 12px; }
+  tbody tr:hover td{ background:#FFF8F5; }
+  .tbl-wrap{ background:#fff; border-radius:14px; overflow:hidden; box-shadow:0 1px 8px rgba(0,0,0,.05); }
+  .num{ text-align:right; font-variant-numeric:tabular-nums; }
+
+  .dm-row{ display:flex; align-items:center; gap:12px; margin:8px 0; }
+  .dm-rank{ width:20px; text-align:right; color:var(--muted); font-weight:700; font-size:13px; }
+  .dm-name-box{ width:170px; flex-shrink:0; }
+  .dm-name{ font-weight:700; color:#374151; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .dm-meta{ font-size:11px; color:var(--muted); }
+  .dm-bar-track{ flex:1; position:relative; height:24px; background:#f7f3ee; border-radius:6px; }
+  .dm-bar-fill{ height:100%; background:linear-gradient(90deg,#FF671F,#ff8a4c); border-radius:6px; }
+  .dm-bar-mark{ position:absolute; top:-3px; bottom:-3px; width:2px; background:#111; opacity:.5; }
+  .dm-val{ width:96px; text-align:right; font-weight:800; font-size:13px; }
+  .dm-pct{ width:66px; text-align:right; font-weight:700; font-size:13px; }
+
+  .pay-legend-row{ display:flex; align-items:center; gap:10px; margin:11px 0; }
+  .dot{ width:12px; height:12px; border-radius:3px; display:inline-block; }
+  .pay-legend-row .name{ flex:1; color:#374151; font-weight:600; }
+  .pay-legend-row .amt{ font-weight:800; color:#111; }
+  .pay-legend-row .pct{ color:var(--muted); width:52px; text-align:right; }
+
+  #loadOverlay{
+    position:fixed; inset:0; background:rgba(255,248,220,.7); display:flex; align-items:center;
+    justify-content:center; font-family:'Nunito',sans-serif; font-weight:800; color:var(--orange);
+    z-index:50;
+  }
+  #errBox{
+    background:#FFF3EC; border:1.5px solid #FFD9C4; border-radius:14px; color:#c2440a;
+    padding:12px 16px; margin-bottom:16px; font-size:13px;
+  }
+
+  /* ── nav drawer ── */
+  .hamburger-btn{ background:none; border:none; font-size:22px; cursor:pointer; color:var(--ink);
+                   padding:4px 10px; border-radius:8px; }
+  .hamburger-btn:hover{ background:#FFF3EC; }
+  .nav-overlay{ position:fixed; inset:0; background:rgba(0,0,0,.3); z-index:99;
+                opacity:0; pointer-events:none; transition:opacity .2s; }
+  .nav-overlay.open{ opacity:1; pointer-events:auto; }
+  .nav-drawer{ position:fixed; top:0; left:0; bottom:0; width:250px; background:#fff;
+               box-shadow:2px 0 24px rgba(0,0,0,.15); transform:translateX(-100%);
+               transition:transform .25s ease; z-index:100; padding:18px 0; overflow-y:auto; }
+  .nav-drawer.open{ transform:translateX(0); }
+  .nav-drawer .nav-title{ padding:0 20px 14px; font-family:'Nunito',sans-serif; font-weight:900;
+                           color:var(--orange); font-size:15px; border-bottom:1px solid #f0ece6; margin-bottom:8px; }
+  .nav-drawer a{ display:flex; align-items:center; gap:10px; padding:13px 20px; color:#374151;
+                 text-decoration:none; font-weight:700; font-family:'Nunito',sans-serif; font-size:14px;
+                 border-left:3px solid transparent; }
+  .nav-drawer a:hover{ background:#FFF8F5; }
+  .nav-drawer a.active{ color:var(--orange); border-left-color:var(--orange); background:#FFF3EC; }
+</style>
+</head>
+<body>
+
+<div id="loadOverlay" class="hidden">กำลังโหลดข้อมูล...</div>
+
+<div class="nav-overlay" id="navOverlay"></div>
+<nav class="nav-drawer" id="navDrawer">
+  <div class="nav-title">📊 GD DASHBOARD</div>
+  <a href="index.html" class="active">📈 Sale Monitor</a>
+  <a href="transfer-in.html">🚚 Transfer In</a>
+  <a href="exception.html">⚠️ Exception Report</a>
+  <a href="petty-cash.html">💰 Petty Cash</a>
+</nav>
+
+<div class="topbar">
+  <button class="hamburger-btn" id="btnMenu">☰</button>
+  <div class="brand">📈 SALE MONITOR</div>
+
+  <div class="field">
+    <label>วันที่</label>
+    <input type="date" id="smDate">
+  </div>
+  <div class="field">
+    <label>DM (performance)</label>
+    <select id="smDm"><option value="">ทุก DM</option></select>
+  </div>
+  <div class="field">
+    <label>Top สาขา (กราฟ)</label>
+    <select id="smTopN">
+      <option>10</option><option selected>15</option><option>20</option><option>30</option><option>50</option>
+    </select>
+  </div>
+  <div class="field">
+    <label>ต่อหน้า (ranking)</label>
+    <select id="smRankPP">
+      <option>25</option><option>50</option><option>100</option><option>200</option><option>300</option>
+    </select>
+  </div>
+
+  <label class="auto-toggle"><input type="checkbox" id="smAuto" checked> auto-refresh 30s</label>
+
+  <div class="spacer"></div>
+  <span class="who" id="whoLabel"></span>
+  <button class="chip-btn ghost" id="btnRefresh">🔄 REFRESH</button>
+  <button class="chip-btn ghost" id="btnLogout">ออกจากระบบ</button>
+</div>
+
+<main>
+  <div id="errBox" class="hidden"></div>
+
+  <div id="dashboard">
+    <!-- hero -->
+    <div class="banner">
+      <div class="left">
+        <div><div class="lb">Gross Sale · ก่อนหักส่วนลด</div>
+             <div class="big" style="color:#6b7280" id="valGross">฿0</div></div>
+        <div class="arrow">&#8594;</div>
+        <div><div class="lb">ส่วนลดที่จ่าย · Discount spent</div>
+             <div class="big" style="color:var(--magenta)" id="valDisc">฿0</div></div>
+        <div class="arrow">&#8594;</div>
+        <div><div class="lb">สร้างยอดขายรวม · Net sale</div>
+             <div class="big" style="color:var(--orange)" id="valNet">฿0</div></div>
+      </div>
+      <div class="right">
+        <div><div class="lb">Discount / Sale</div><div class="val" id="valDiscPct">0.0%</div></div>
+        <div><div class="lb">ส่วนลด / บิล</div><div class="val" id="valDiscPerBill">฿0</div></div>
+      </div>
+    </div>
+
+    <div class="kpi-row">
+      <div class="card"><div class="lb">จำนวนบิล</div><div class="val" id="valBills">0</div></div>
+      <div class="card"><div class="lb">AVG / BILL</div><div class="val" id="valAvgBill">฿0</div></div>
+      <div class="card"><div class="lb">บิลใช้คูปอง</div><div class="val" id="valCoupons">0</div></div>
+      <div class="card"><div class="lb">สาขาขายแล้ว</div><div class="val" id="valShops">0</div></div>
+    </div>
+
+    <div class="pace-head">
+      <span class="t">📡 Sale Monitor</span>
+      <span class="s">เรียลไทม์ Today vs Yesterday รายสาขา</span>
+      <span class="live" id="liveLabel"></span>
+    </div>
+    <div class="pace-row">
+      <div class="card"><div class="lb">ยอดวันนี้ (ณ ขณะนี้)</div>
+           <div class="val" style="color:var(--orange)" id="valNetPace">฿0</div></div>
+      <div class="card"><div class="lb">เมื่อวาน (ทั้งวัน)</div>
+           <div class="val" id="valYdayFull">฿0</div></div>
+      <div class="card"><div class="lb">เทียบ ณ เวลาเดียวกัน</div>
+           <div class="val" id="valPacePct">▲ 0.0%</div>
+           <div class="tag-up" id="valYdaySame">↑ เมื่อวาน ฿0</div></div>
+    </div>
+
+    <hr class="div">
+
+    <div class="chart-box">
+      <div class="section-title">🏆 Top สาขา วันนี้ vs เมื่อวาน</div>
+      <canvas id="chartTopShops" height="90"></canvas>
+    </div>
+
+    <hr class="div">
+
+    <div class="chart-box">
+      <div class="section-title">📊 ยอดขาย vs ส่วนลด รายชั่วโมง</div>
+      <canvas id="chartHourly" height="90"></canvas>
+    </div>
+
+    <hr class="div">
+
+    <div class="two-col" id="payPromoRow">
+      <div class="chart-box">
+        <div class="section-title">💳 สัดส่วนการจ่ายเงิน</div>
+        <div class="section-sub">เงินรับจริง (ไม่รวมคูปอง/ส่วนลด)</div>
+        <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
+          <div style="flex:1;min-width:220px"><canvas id="chartPay"></canvas></div>
+          <div style="flex:1;min-width:220px" id="payLegend"></div>
+        </div>
+      </div>
+      <div class="chart-box">
+        <div class="section-title" style="color:var(--magenta)">🎟️ Top โปรโมชั่น (คูปอง)</div>
+        <div class="section-sub">ส่วนลดที่ให้ผ่านคูปอง</div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>#</th><th>โปรโมชั่น</th><th class="num">ยอด (฿)</th><th class="num">บิล</th></tr></thead>
+            <tbody id="promoBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <hr class="div">
+
+    <div id="dmPerfSection" class="chart-box hidden">
+      <div class="section-title">👤 DM Performance</div>
+      <div class="section-sub">เส้นดำ = ยอดเมื่อวาน ณ เวลาเดียวกัน · % = เทียบเมื่อวาน (pace)</div>
+      <div id="dmPerfBody"></div>
+    </div>
+
+    <hr class="div" id="dmPerfDiv">
+
+    <div class="chart-box">
+      <div class="section-title">🏪 รายรับตามสาขา</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th>#</th><th>รหัสสาขา</th><th>สาขา</th><th>DM</th>
+            <th class="num">ยอดวันนี้</th><th class="num">บิล</th><th class="num">Avg/บิล</th>
+            <th class="num">เทียบเมื่อวาน %</th><th>บิลล่าสุด</th>
+          </tr></thead>
+          <tbody id="shopsBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+// ─────────────────────────── AUTH GUARD ───────────────────────────
+const API_BASE = "https://exception.mobile1234.site";
+
+const token = localStorage.getItem('sm_token');
+const tokenExp = parseInt(localStorage.getItem('sm_token_exp') || '0', 10);
+if (!token || Date.now() >= tokenExp) {
+  window.location.href = 'login.html';
+}
+document.getElementById('whoLabel').textContent = localStorage.getItem('sm_full_name') || '';
+
+document.getElementById('btnLogout').addEventListener('click', () => {
+  localStorage.removeItem('sm_token');
+  localStorage.removeItem('sm_token_exp');
+  localStorage.removeItem('sm_full_name');
+  window.location.href = 'login.html';
+});
+
+document.getElementById('btnMenu').addEventListener('click', () => {
+  document.getElementById('navDrawer').classList.add('open');
+  document.getElementById('navOverlay').classList.add('open');
+});
+document.getElementById('navOverlay').addEventListener('click', () => {
+  document.getElementById('navDrawer').classList.remove('open');
+  document.getElementById('navOverlay').classList.remove('open');
+});
+
+async function apiGet(path) {
+  const res = await fetch(`${API_BASE}${path}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (res.status === 401) {
+    localStorage.removeItem('sm_token');
+    window.location.href = 'login.html';
+    return null;
+  }
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.detail || `โหลดข้อมูลไม่สำเร็จ (${res.status})`);
+  }
+  return res.json();
+}
+
+// ─────────────────────────── STATE ───────────────────────────
+const dateEl   = document.getElementById('smDate');
+const dmEl     = document.getElementById('smDm');
+const topNEl   = document.getElementById('smTopN');
+const rankPPEl = document.getElementById('smRankPP');
+const autoEl   = document.getElementById('smAuto');
+const errBox   = document.getElementById('errBox');
+const overlay  = document.getElementById('loadOverlay');
+
+let autoTimer = null;
+let charts = { topShops: null, hourly: null, pay: null };
+let lastValues = {}; // สำหรับ count-up animation จากค่าก่อนหน้า
+
+function todayStr() {
+  const d = new Date();
+  return d.toISOString().slice(0, 10);
+}
+dateEl.value = todayStr();
+
+// ─────────────────────────── FORMAT HELPERS ───────────────────────────
+const fmtBaht = (n) => '฿' + Math.round(n).toLocaleString('en-US');
+const fmtInt  = (n) => Math.round(n).toLocaleString('en-US');
+const fmtPct  = (n) => (n === null || n === undefined) ? '—' : n.toFixed(1) + '%';
+
+function countUp(el, from, to, opts = {}) {
+  const dur = 750;
+  const t0 = performance.now();
+  function step(ts) {
+    const p = Math.min((ts - t0) / dur, 1);
+    const ease = 1 - Math.pow(1 - p, 3);
+    const v = from + (to - from) * ease;
+    el.textContent = opts.fmt ? opts.fmt(v) : Math.round(v).toLocaleString('en-US');
+    if (p < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+function setNum(id, val, fmt) {
+  const el = document.getElementById(id);
+  const from = lastValues[id] ?? 0;
+  countUp(el, from, val, { fmt });
+  lastValues[id] = val;
+}
+
+// ─────────────────────────── LOAD DM OPTIONS ───────────────────────────
+async function loadDmOptions() {
+  try {
+    const data = await apiGet(`/api/sale-monitor/dm-options?biz_date=${dateEl.value}`);
+    if (!data) return;
+    const current = dmEl.value;
+    dmEl.innerHTML = '<option value="">ทุก DM</option>' +
+      data.dm.map(d => `<option value="${d}">${d}</option>`).join('');
+    if (data.dm.includes(current)) dmEl.value = current;
+  } catch (e) { /* ไม่ critical ถ้าโหลด option ไม่ได้ */ }
+}
+
+// ─────────────────────────── MAIN LOAD ───────────────────────────
+async function loadSummary() {
+  overlay.classList.remove('hidden');
+  errBox.classList.add('hidden');
+  try {
+    const params = new URLSearchParams({
+      biz_date: dateEl.value,
+      dm: dmEl.value,
+      top_n: topNEl.value,
+    });
+    const d = await apiGet(`/api/sale-monitor/summary?${params}`);
+    if (!d) return;
+    render(d);
+  } catch (e) {
+    errBox.textContent = e.message;
+    errBox.classList.remove('hidden');
+  } finally {
+    overlay.classList.add('hidden');
+  }
+}
+
+// ─────────────────────────── RENDER ───────────────────────────
+function render(d) {
+  const t = d.totals, c = d.compare;
+
+  setNum('valGross', t.gross, fmtBaht);
+  setNum('valDisc', t.discount, fmtBaht);
+  setNum('valNet', t.net, fmtBaht);
+  document.getElementById('valDiscPct').textContent = fmtPct(t.disc_pct);
+  document.getElementById('valDiscPerBill').textContent = fmtBaht(t.disc_per_bill);
+
+  setNum('valBills', t.bills, fmtInt);
+  setNum('valAvgBill', t.avg_bill, fmtBaht);
+  setNum('valCoupons', t.coupons, fmtInt);
+  setNum('valShops', t.shops, fmtInt);
+
+  const live = d.is_today ? `🟢 live · อัปเดต ${d.snapshot_time || '--:--'}` : `📅 ${d.date}`;
+  document.getElementById('liveLabel').textContent = live;
+
+  setNum('valNetPace', t.net, fmtBaht);
+  setNum('valYdayFull', c.net_yesterday_full, fmtBaht);
+  const paceEl = document.getElementById('valPacePct');
+  const up = c.pace_pct >= 0;
+  paceEl.style.color = up ? 'var(--green)' : 'var(--red)';
+  paceEl.textContent = `${up ? '▲' : '▼'} ${Math.abs(c.pace_pct).toFixed(1)}%`;
+  document.getElementById('valYdaySame').textContent = `↑ เมื่อวาน ${fmtBaht(c.net_yesterday_same_time)}`;
+
+  renderTopShops(d.top_shops);
+  renderHourly(d.hourly);
+  renderPay(d.payment);
+  renderDmPerf(d.dm_performance);
+  renderShopsTable(d.shops_ranking);
+}
+
+function renderTopShops(rows) {
+  const ctx = document.getElementById('chartTopShops');
+  const labels = rows.map(r => `${r.shop_code} ${r.shop_name.slice(0, 16)}`);
+  const cfg = {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'วันนี้', data: rows.map(r => r.today), backgroundColor: '#FF671F' },
+        { label: 'เมื่อวาน', data: rows.map(r => r.yday), backgroundColor: '#f6c9a8' },
+      ],
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { position: 'top' } },
+      scales: {
+        x: { ticks: { autoSkip: false, maxRotation: 50, minRotation: 40 } },
+        y: { grid: { color: '#f0ece6' } },
+      },
+    },
+  };
+  if (charts.topShops) charts.topShops.destroy();
+  charts.topShops = new Chart(ctx, cfg);
+}
+
+function renderHourly(rows) {
+  const ctx = document.getElementById('chartHourly');
+  const labels = rows.map(r => String(r.hour).padStart(2, '0'));
+  const cfg = {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { type: 'bar', label: 'ยอดขาย', data: rows.map(r => r.net_sales),
+          backgroundColor: '#FF671F', yAxisID: 'y' },
+        { type: 'line', label: 'ส่วนลด', data: rows.map(r => r.discount),
+          borderColor: '#3b82f6', backgroundColor: '#3b82f6', tension: 0.4, yAxisID: 'y1' },
+      ],
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { position: 'top' } },
+      scales: {
+        y:  { position: 'left',  title: { display: true, text: 'ยอดขาย' }, grid: { color: '#f0ece6' } },
+        y1: { position: 'right', title: { display: true, text: 'ส่วนลด' }, grid: { display: false } },
+      },
+    },
+  };
+  if (charts.hourly) charts.hourly.destroy();
+  charts.hourly = new Chart(ctx, cfg);
+}
+
+const PAY_PALETTE = {
+  'เงินสด': '#FF671F', 'QR PromptPay': '#10b981', 'บัตรเครดิต': '#3b82f6',
+  'Delivery': '#E91E8C', 'e-Wallet': '#a855f7',
+};
+
+function renderPay(payment) {
+  const names = Object.keys(payment.groups);
+  const vals = names.map(n => payment.groups[n]);
+  const cols = names.map(n => PAY_PALETTE[n] || '#f6c9a8');
+
+  const ctx = document.getElementById('chartPay');
+  if (charts.pay) charts.pay.destroy();
+  if (names.length) {
+    charts.pay = new Chart(ctx, {
+      type: 'doughnut',
+      data: { labels: names, datasets: [{ data: vals, backgroundColor: cols }] },
+      options: {
+        cutout: '58%',
+        plugins: { legend: { position: 'bottom' } },
+      },
+    });
+  }
+
+  const legend = document.getElementById('payLegend');
+  const total = payment.total || 0;
+  legend.innerHTML = names.map(n => {
+    const v = payment.groups[n];
+    const pct = total ? (v / total * 100) : 0;
+    return `<div class="pay-legend-row">
+      <span class="dot" style="background:${PAY_PALETTE[n] || '#f6c9a8'}"></span>
+      <span class="name">${n}</span>
+      <span class="amt">${fmtBaht(v)}</span>
+      <span class="pct">${pct.toFixed(1)}%</span>
+    </div>`;
+  }).join('');
+
+  const promoBody = document.getElementById('promoBody');
+  promoBody.innerHTML = payment.promo.map((p, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td>${p.card_name || '(ไม่ระบุ)'}</td>
+      <td class="num">${fmtBaht(p.net_amt)}</td>
+      <td class="num">${fmtInt(p.bills)}</td>
+    </tr>`).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--muted)">ไม่มีข้อมูล</td></tr>';
+}
+
+function renderDmPerf(rows) {
+  const section = document.getElementById('dmPerfSection');
+  const div = document.getElementById('dmPerfDiv');
+  if (!rows || !rows.length) {
+    section.classList.add('hidden');
+    div.classList.add('hidden');
+    return;
+  }
+  section.classList.remove('hidden');
+  div.classList.remove('hidden');
+  const mx = Math.max(1, ...rows.map(r => Math.max(r.today, r.yday)));
+  const body = document.getElementById('dmPerfBody');
+  body.innerHTML = rows.map((r, i) => {
+    const w = r.today / mx * 100;
+    const yw = r.yday / mx * 100;
+    const pct = r.yday ? (r.today - r.yday) / r.yday * 100 : 0;
+    const up = pct >= 0;
+    const col = up ? 'var(--green)' : 'var(--red)';
+    return `<div class="dm-row">
+      <div class="dm-rank">${i + 1}</div>
+      <div class="dm-name-box">
+        <div class="dm-name">${r.dm}</div>
+        <div class="dm-meta">${r.shops} สาขา · ${fmtInt(r.bills)} บิล</div>
+      </div>
+      <div class="dm-bar-track">
+        <div class="dm-bar-fill" style="width:${w.toFixed(1)}%"></div>
+        <div class="dm-bar-mark" style="left:${yw.toFixed(1)}%"></div>
+      </div>
+      <div class="dm-val">${fmtBaht(r.today)}</div>
+      <div class="dm-pct" style="color:${col}">${up ? '▲' : '▼'} ${Math.abs(pct).toFixed(1)}%</div>
+    </div>`;
+  }).join('');
+}
+
+function renderShopsTable(rows) {
+  const pp = parseInt(rankPPEl.value, 10);
+  const body = document.getElementById('shopsBody');
+  const slice = rows.slice(0, pp);
+  body.innerHTML = slice.map((r, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td>${r.shop_code}</td>
+      <td>${r.shop_name}</td>
+      <td>${r.dm || '—'}</td>
+      <td class="num">${fmtBaht(r.today)}</td>
+      <td class="num">${fmtInt(r.bills)}</td>
+      <td class="num">${fmtBaht(r.avg)}</td>
+      <td class="num">${fmtPct(r.diff_pct)}</td>
+      <td>${r.last_bill || '—'}</td>
+    </tr>`).join('') || '<tr><td colspan="9" style="text-align:center;color:var(--muted)">ยังไม่มีข้อมูล Sale Monitor</td></tr>';
+}
+
+// ─────────────────────────── AUTO REFRESH ───────────────────────────
+function setupAutoRefresh() {
+  if (autoTimer) clearInterval(autoTimer);
+  const isToday = dateEl.value === todayStr();
+  if (autoEl.checked && isToday) {
+    autoTimer = setInterval(loadSummary, 30000);
+  }
+}
+
+// ─────────────────────────── EVENTS ───────────────────────────
+dateEl.addEventListener('change', async () => { await loadDmOptions(); await loadSummary(); setupAutoRefresh(); });
+dmEl.addEventListener('change', loadSummary);
+topNEl.addEventListener('change', loadSummary);
+rankPPEl.addEventListener('change', () => { /* re-render ranking จาก cache ล่าสุดด้วยการโหลดใหม่ */ loadSummary(); });
+autoEl.addEventListener('change', setupAutoRefresh);
+document.getElementById('btnRefresh').addEventListener('click', loadSummary);
+
+// ─────────────────────────── INIT ───────────────────────────
+(async function init() {
+  await loadDmOptions();
+  await loadSummary();
+  setupAutoRefresh();
+})();
+</script>
+</body>
+</html>

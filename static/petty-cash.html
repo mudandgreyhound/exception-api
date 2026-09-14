@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Petty Cash · Dunkin'</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;0,900;1,800&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --orange:#FF671F; --orange-dk:#e55a15; --magenta:#E91E8C; --magenta-dk:#CE1E7C;
+    --cream:#FFF8DC; --ink:#1C1C1C; --muted:#9ca3af; --label:#b08968;
+    --border:#e8e0d6; --green:#16a34a; --green2:#10b981; --red:#dc2626; --red2:#ef4444;
+    --blue:#3b82f6; --purple:#a855f7;
+  }
+  *{box-sizing:border-box}
+  body{ margin:0; background:var(--cream); color:var(--ink); font-family:'Sarabun','Nunito',sans-serif; }
+  .hidden{display:none !important}
+
+  .topbar{ background:#fff; border-bottom:2px solid #f0ece6; padding:14px 24px;
+           display:flex; align-items:center; gap:16px; flex-wrap:wrap; position:sticky; top:0; z-index:10; }
+  .brand{ font-family:'Nunito',sans-serif; font-weight:900; font-size:18px; color:var(--orange);
+          display:flex; align-items:center; gap:8px; margin-right:8px; }
+  .field{ display:flex; flex-direction:column; gap:3px; }
+  .field label{ font-family:'Nunito',sans-serif; font-size:10px; font-weight:800; letter-spacing:1px;
+                text-transform:uppercase; color:var(--muted); }
+  .field select, .field input{ padding:8px 10px; border:1.5px solid var(--border); border-radius:10px;
+    background:var(--cream); font-family:'Sarabun',sans-serif; font-size:13px; color:var(--ink); }
+  .topbar .spacer{ flex:1; }
+  .chip-btn{ border:none; border-radius:25px; padding:9px 18px; font-family:'Nunito',sans-serif;
+    font-weight:800; font-size:12px; letter-spacing:.5px; cursor:pointer; transition:transform .15s; }
+  .chip-btn:hover{ transform:translateY(-1px); }
+  .chip-btn.ghost{ background:#fff; color:var(--muted); border:1.5px solid var(--border); }
+  .auto-toggle{ display:flex; align-items:center; gap:6px; font-size:12px; color:var(--muted); font-weight:700; }
+  .who{ font-size:12px; color:var(--muted); }
+
+  main{ padding:20px 24px 60px; max-width:1400px; margin:0 auto; }
+
+  .banner{ background:linear-gradient(90deg,#FFF4EC,#FDECF4); border:1px solid #f6d9c9; border-radius:16px;
+    padding:16px 22px; margin-bottom:14px; display:flex; align-items:center; justify-content:space-between;
+    flex-wrap:wrap; gap:14px; }
+  .banner .left{ display:flex; align-items:center; gap:26px; flex-wrap:wrap; }
+  .lb{ color:var(--label); font-size:12px; font-weight:700; font-family:'Nunito',sans-serif; }
+  .big{ font-size:26px; font-weight:800; font-family:'Nunito',sans-serif; }
+
+  .kpi-row{ display:flex; gap:14px; margin-bottom:16px; flex-wrap:wrap; }
+  .card{ background:#fff; border:1px solid #f0ece6; border-radius:14px; padding:14px 18px;
+         box-shadow:0 1px 3px rgba(0,0,0,.04); flex:1; min-width:150px; }
+  .card .val{ font-size:24px; font-weight:800; font-family:'Nunito',sans-serif; }
+
+  hr.div{ border:none; border-top:1px solid #ede8e1; margin:22px 0; }
+  .section-title{ font-weight:800; color:var(--orange); font-size:18px; margin-bottom:2px;
+                   font-family:'Nunito',sans-serif; }
+  .section-sub{ font-size:12px; color:var(--muted); margin-bottom:10px; }
+  .chart-box{ background:#fff; border-radius:16px; padding:16px; box-shadow:0 2px 20px rgba(0,0,0,.06); }
+  .two-col{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media (max-width:860px){ .two-col{ grid-template-columns:1fr; } }
+
+  table{ width:100%; border-collapse:collapse; font-size:13px; }
+  thead th{ background:#FFF3EC; color:var(--orange); font-family:'Nunito',sans-serif; font-size:11px;
+            font-weight:800; text-transform:uppercase; letter-spacing:.6px; border-bottom:2px solid #FFD9C4;
+            padding:10px 12px; text-align:left; }
+  tbody td{ background:#fff; color:#374151; font-weight:500; border-bottom:1px solid #FFF8DC; padding:9px 12px; }
+  tbody tr:hover td{ background:#FFF8F5; }
+  .tbl-wrap{ background:#fff; border-radius:14px; overflow:hidden; box-shadow:0 1px 8px rgba(0,0,0,.05); }
+  .num{ text-align:right; font-variant-numeric:tabular-nums; }
+
+  .pay-legend-row{ display:flex; align-items:center; gap:10px; margin:11px 0; }
+  .dot{ width:12px; height:12px; border-radius:3px; display:inline-block; }
+  .pay-legend-row .name{ flex:1; color:#374151; font-weight:600; }
+  .pay-legend-row .amt{ font-weight:800; color:#111; }
+  .pay-legend-row .pct{ color:var(--muted); width:52px; text-align:right; }
+
+  #loadOverlay{ position:fixed; inset:0; background:rgba(255,248,220,.7); display:flex; align-items:center;
+    justify-content:center; font-family:'Nunito',sans-serif; font-weight:800; color:var(--orange); z-index:50; }
+  #errBox{ background:#FFF3EC; border:1.5px solid #FFD9C4; border-radius:14px; color:#c2440a;
+    padding:12px 16px; margin-bottom:16px; font-size:13px; }
+
+  .hamburger-btn{ background:none; border:none; font-size:22px; cursor:pointer; color:var(--ink);
+                   padding:4px 10px; border-radius:8px; }
+  .hamburger-btn:hover{ background:#FFF3EC; }
+  .nav-overlay{ position:fixed; inset:0; background:rgba(0,0,0,.3); z-index:99;
+                opacity:0; pointer-events:none; transition:opacity .2s; }
+  .nav-overlay.open{ opacity:1; pointer-events:auto; }
+  .nav-drawer{ position:fixed; top:0; left:0; bottom:0; width:250px; background:#fff;
+               box-shadow:2px 0 24px rgba(0,0,0,.15); transform:translateX(-100%);
+               transition:transform .25s ease; z-index:100; padding:18px 0; overflow-y:auto; }
+  .nav-drawer.open{ transform:translateX(0); }
+  .nav-drawer .nav-title{ padding:0 20px 14px; font-family:'Nunito',sans-serif; font-weight:900;
+                           color:var(--orange); font-size:15px; border-bottom:1px solid #f0ece6; margin-bottom:8px; }
+  .nav-drawer a{ display:flex; align-items:center; gap:10px; padding:13px 20px; color:#374151;
+                 text-decoration:none; font-weight:700; font-family:'Nunito',sans-serif; font-size:14px;
+                 border-left:3px solid transparent; }
+  .nav-drawer a:hover{ background:#FFF8F5; }
+  .nav-drawer a.active{ color:var(--orange); border-left-color:var(--orange); background:#FFF3EC; }
+</style>
+</head>
+<body>
+
+<div id="loadOverlay" class="hidden">กำลังโหลดข้อมูล...</div>
+
+<div class="nav-overlay" id="navOverlay"></div>
+<nav class="nav-drawer" id="navDrawer">
+  <div class="nav-title">📊 GD DASHBOARD</div>
+  <a href="index.html">📈 Sale Monitor</a>
+  <a href="transfer-in.html">🚚 Transfer In</a>
+  <a href="exception.html">⚠️ Exception Report</a>
+  <a href="petty-cash.html" class="active">💰 Petty Cash</a>
+</nav>
+
+<div class="topbar">
+  <button class="hamburger-btn" id="btnMenu">☰</button>
+  <div class="brand">💰 PETTY CASH</div>
+
+  <div class="field">
+    <label>วันที่</label>
+    <input type="date" id="smDate">
+  </div>
+
+  <label class="auto-toggle"><input type="checkbox" id="smAuto" checked> auto-refresh 30s</label>
+
+  <div class="spacer"></div>
+  <span class="who" id="whoLabel"></span>
+  <button class="chip-btn ghost" id="btnRefresh">🔄 REFRESH</button>
+  <button class="chip-btn ghost" id="btnLogout">ออกจากระบบ</button>
+</div>
+
+<main>
+  <div id="errBox" class="hidden"></div>
+
+  <div class="banner">
+    <div class="left">
+      <div><div class="lb">ยอดใช้จ่ายวันนี้</div>
+           <div class="big" style="color:var(--magenta)" id="valAmt">฿0</div></div>
+    </div>
+    <div style="text-align:right">
+      <div class="lb">เมื่อวาน</div>
+      <div class="val" id="valYday">฿0</div>
+    </div>
+  </div>
+
+  <div class="kpi-row">
+    <div class="card"><div class="lb">จำนวนบิล</div><div class="val" id="valCnt">0</div></div>
+    <div class="card"><div class="lb">สาขาที่มีการเบิก</div><div class="val" id="valShops">0</div></div>
+  </div>
+
+  <hr class="div">
+
+  <div class="two-col">
+    <div class="chart-box">
+      <div class="section-title">🧾 ประเภทค่าใช้จ่าย</div>
+      <div class="section-sub">สัดส่วนยอดตามหมวดหมู่ (วันนี้)</div>
+      <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
+        <div style="flex:1;min-width:220px"><canvas id="chartCat"></canvas></div>
+        <div style="flex:1;min-width:220px" id="catLegend"></div>
+      </div>
+    </div>
+    <div class="chart-box">
+      <div class="section-title">🕒 รายการล่าสุด</div>
+      <div class="tbl-wrap" style="max-height:360px;overflow-y:auto">
+        <table>
+          <thead><tr><th>สาขา</th><th>เลขที่</th><th>รายการ</th><th class="num">ยอด</th></tr></thead>
+          <tbody id="recentBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <hr class="div">
+
+  <div class="chart-box">
+    <div class="section-title">🏪 รายสาขา</div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr>
+          <th>#</th><th>รหัสสาขา</th><th>สาขา</th><th>DM</th>
+          <th class="num">บิล</th><th class="num">ยอดวันนี้</th><th class="num">เทียบเมื่อวาน %</th>
+        </tr></thead>
+        <tbody id="shopsBody"></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<script>
+const API_BASE = "https://exception.mobile1234.site";
+
+const token = localStorage.getItem('sm_token');
+const tokenExp = parseInt(localStorage.getItem('sm_token_exp') || '0', 10);
+if (!token || Date.now() >= tokenExp) window.location.href = 'login.html';
+document.getElementById('whoLabel').textContent = localStorage.getItem('sm_full_name') || '';
+
+document.getElementById('btnLogout').addEventListener('click', () => {
+  localStorage.removeItem('sm_token'); localStorage.removeItem('sm_token_exp'); localStorage.removeItem('sm_full_name');
+  window.location.href = 'login.html';
+});
+document.getElementById('btnMenu').addEventListener('click', () => {
+  document.getElementById('navDrawer').classList.add('open');
+  document.getElementById('navOverlay').classList.add('open');
+});
+document.getElementById('navOverlay').addEventListener('click', () => {
+  document.getElementById('navDrawer').classList.remove('open');
+  document.getElementById('navOverlay').classList.remove('open');
+});
+
+async function apiGet(path) {
+  const res = await fetch(`${API_BASE}${path}`, { headers: { Authorization: `Bearer ${token}` } });
+  if (res.status === 401) { localStorage.removeItem('sm_token'); window.location.href = 'login.html'; return null; }
+  if (!res.ok) { const body = await res.json().catch(() => ({})); throw new Error(body.detail || `โหลดข้อมูลไม่สำเร็จ (${res.status})`); }
+  return res.json();
+}
+
+const dateEl  = document.getElementById('smDate');
+const autoEl  = document.getElementById('smAuto');
+const errBox  = document.getElementById('errBox');
+const overlay = document.getElementById('loadOverlay');
+let autoTimer = null;
+let chartCat = null;
+
+function todayStr() { return new Date().toISOString().slice(0, 10); }
+dateEl.value = todayStr();
+
+const fmtBaht = (n) => '฿' + Math.round(n).toLocaleString('en-US');
+const fmtInt  = (n) => Math.round(n).toLocaleString('en-US');
+const fmtPct  = (n) => (n === null || n === undefined) ? '—' : n.toFixed(1) + '%';
+
+const CAT_PALETTE = ['#FF671F', '#E91E8C', '#3b82f6', '#10b981', '#a855f7', '#f59e0b', '#dc2626', '#0891b2'];
+
+async function loadSummary() {
+  overlay.classList.remove('hidden'); errBox.classList.add('hidden');
+  try {
+    const d = await apiGet(`/api/petty-cash/summary?biz_date=${dateEl.value}`);
+    if (!d) return;
+    render(d);
+  } catch (e) { errBox.textContent = e.message; errBox.classList.remove('hidden'); }
+  finally { overlay.classList.add('hidden'); }
+}
+
+function render(d) {
+  const t = d.totals;
+  document.getElementById('valAmt').textContent = fmtBaht(t.today_amt);
+  document.getElementById('valYday').textContent = fmtBaht(t.yday_amt);
+  document.getElementById('valCnt').textContent = fmtInt(t.today_cnt);
+  document.getElementById('valShops').textContent = fmtInt(t.today_shops);
+
+  renderCategories(d.categories);
+  renderRecent(d.recent);
+  renderShopsTable(d.shops);
+}
+
+function renderCategories(cats) {
+  const names = cats.map(c => c.name || c.code);
+  const vals = cats.map(c => c.amt);
+  const cols = names.map((_, i) => CAT_PALETTE[i % CAT_PALETTE.length]);
+
+  const ctx = document.getElementById('chartCat');
+  if (chartCat) chartCat.destroy();
+  if (names.length) {
+    chartCat = new Chart(ctx, {
+      type: 'doughnut',
+      data: { labels: names, datasets: [{ data: vals, backgroundColor: cols }] },
+      options: { cutout: '58%', plugins: { legend: { display: false } } },
+    });
+  }
+
+  const total = vals.reduce((a, b) => a + b, 0);
+  const legend = document.getElementById('catLegend');
+  legend.innerHTML = cats.map((c, i) => {
+    const pct = total ? (c.amt / total * 100) : 0;
+    return `<div class="pay-legend-row">
+      <span class="dot" style="background:${CAT_PALETTE[i % CAT_PALETTE.length]}"></span>
+      <span class="name">${c.name || c.code}</span>
+      <span class="amt">${fmtBaht(c.amt)}</span>
+      <span class="pct">${pct.toFixed(1)}%</span>
+    </div>`;
+  }).join('') || '<div style="color:var(--muted);font-size:13px">ยังไม่มีข้อมูล</div>';
+}
+
+function renderRecent(rows) {
+  const body = document.getElementById('recentBody');
+  body.innerHTML = rows.map(r => `
+    <tr>
+      <td>${r.shop_code}</td>
+      <td>${r.doc_no}</td>
+      <td>${r.expen_des1}</td>
+      <td class="num">${fmtBaht(r.expen_amt)}</td>
+    </tr>`).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--muted)">ยังไม่มีข้อมูล</td></tr>';
+}
+
+function renderShopsTable(rows) {
+  const body = document.getElementById('shopsBody');
+  body.innerHTML = rows.map((r, i) => `
+    <tr>
+      <td>${i + 1}</td><td>${r.shop_code}</td><td>${r.shop_name}</td><td>${r.dm || '—'}</td>
+      <td class="num">${fmtInt(r.today_cnt)}</td>
+      <td class="num">${fmtBaht(r.today_amt)}</td>
+      <td class="num">${fmtPct(r.diff_pct)}</td>
+    </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--muted)">ยังไม่มีข้อมูล</td></tr>';
+}
+
+function setupAutoRefresh() {
+  if (autoTimer) clearInterval(autoTimer);
+  if (autoEl.checked && dateEl.value === todayStr()) autoTimer = setInterval(loadSummary, 30000);
+}
+
+dateEl.addEventListener('change', () => { loadSummary(); setupAutoRefresh(); });
+autoEl.addEventListener('change', setupAutoRefresh);
+document.getElementById('btnRefresh').addEventListener('click', loadSummary);
+
+(async function init() { await loadSummary(); setupAutoRefresh(); })();
+</script>
+</body>
+</html>
