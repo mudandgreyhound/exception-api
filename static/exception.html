@@ -48,22 +48,16 @@
   .who{ font-size:12px; color:var(--muted); }
 
   .page-title{ font-family:'Nunito',sans-serif; font-weight:900; font-size:20px; color:var(--ink);
-               display:flex; align-items:center; gap:8px; margin-bottom:16px; }
+               display:flex; align-items:center; gap:8px; margin-bottom:4px; }
 
   main{ margin-left:230px; padding:22px 28px 60px; max-width:1500px; }
   @media (max-width:860px){ .sidebar{ position:static; width:auto; border-right:none; border-bottom:2px solid #f0ece6; } main{ margin-left:0; } }
-
-  .banner{ background:linear-gradient(90deg,#FEF2F2,#FDECF4); border:1px solid #fecaca; border-radius:16px;
-    padding:16px 22px; margin-bottom:14px; display:flex; align-items:center; justify-content:space-between;
-    flex-wrap:wrap; gap:14px; }
-  .banner .left{ display:flex; align-items:center; gap:26px; flex-wrap:wrap; }
-  .lb{ color:var(--label); font-size:12px; font-weight:700; font-family:'Nunito',sans-serif; }
-  .big{ font-size:26px; font-weight:800; font-family:'Nunito',sans-serif; }
 
   .kpi-row{ display:flex; gap:14px; margin-bottom:16px; flex-wrap:wrap; }
   .card{ background:#fff; border:1px solid #f0ece6; border-radius:14px; padding:14px 18px;
          box-shadow:0 1px 3px rgba(0,0,0,.04); flex:1; min-width:150px; }
   .card .val{ font-size:24px; font-weight:800; font-family:'Nunito',sans-serif; }
+  .card .delta{ font-size:12px; font-weight:700; margin-top:2px; }
 
   hr.div{ border:none; border-top:1px solid #ede8e1; margin:22px 0; }
   .section-title{ font-weight:800; color:var(--red); font-size:18px; margin-bottom:2px;
@@ -80,11 +74,42 @@
   .tbl-wrap{ background:#fff; border-radius:14px; overflow:hidden; box-shadow:0 1px 8px rgba(0,0,0,.05); }
   .num{ text-align:right; font-variant-numeric:tabular-nums; }
 
+  .radio-group{ display:flex; gap:6px; flex-wrap:wrap; }
+  .radio-pill{ display:flex; align-items:center; gap:5px; padding:7px 14px; border-radius:20px;
+               border:1.5px solid var(--border); background:#fff; font-size:12px; font-weight:700;
+               color:#374151; cursor:pointer; user-select:none; }
+  .radio-pill:has(input:checked){ background:#FEF2F2; border-color:var(--red); color:var(--red); }
+  .radio-pill input{ accent-color:var(--red); }
+
+  .tab-bar{ display:flex; gap:4px; margin-bottom:16px; border-bottom:2px solid #f0ece6; flex-wrap:wrap; }
+  .tab-btn{ background:none; border:none; padding:10px 18px; font-family:'Nunito',sans-serif;
+    font-weight:800; font-size:13px; color:var(--muted); cursor:pointer; border-bottom:3px solid transparent;
+    margin-bottom:-2px; }
+  .tab-btn:hover{ color:var(--red); }
+  .tab-btn.active{ color:var(--red); border-bottom-color:var(--red); }
+  .tab-panel{ display:none; }
+  .tab-panel.active{ display:block; }
+
+  .cmp-card{ background:#fff; border-radius:16px; padding:18px 20px; box-shadow:0 2px 20px rgba(0,0,0,.06); flex:1; min-width:190px; }
+  .cmp-label{ font-family:'Nunito',sans-serif; font-size:11px; font-weight:800; letter-spacing:1px;
+              text-transform:uppercase; color:var(--muted); margin-bottom:10px; }
+  .cmp-row{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:6px; }
+  .cmp-date{ font-size:11px; color:var(--muted); font-weight:700; }
+  .cmp-amt{ font-size:18px; font-weight:900; font-family:'Nunito',sans-serif; }
+  .cmp-div{ border:none; border-top:1px solid #f0ece6; margin:8px 0; }
+  .cmp-delta{ font-size:16px; font-weight:900; font-family:'Nunito',sans-serif; }
+
+  .state-badge{ display:inline-block; padding:2px 8px; border-radius:20px; font-size:11px; font-weight:800; }
+  .state-OK{ background:#ECFDF3; color:var(--green); }
+  .state-WARN{ background:#FEF3C7; color:#b45309; }
+  .state-CRIT{ background:#FEE2E2; color:var(--red); }
+  .state-OFFLINE{ background:#F3F4F6; color:#6b7280; }
+  .state-NODATA{ background:#F3F4F6; color:#9ca3af; }
+
   #loadOverlay{ position:fixed; inset:0; background:rgba(255,248,220,.7); display:flex; align-items:center;
     justify-content:center; font-family:'Nunito',sans-serif; font-weight:800; color:var(--red); z-index:50; }
   #errBox{ background:#FFF3EC; border:1.5px solid #FFD9C4; border-radius:14px; color:#c2440a;
     padding:12px 16px; margin-bottom:16px; font-size:13px; }
-
 </style>
 </head>
 <body>
@@ -106,12 +131,24 @@
   </div>
 
   <div class="sb-section field">
-    <label>วันที่</label>
+    <label>📅 วันที่ต้องการดูข้อมูล</label>
     <input type="date" id="smDate">
+  </div>
+  <div class="sb-section field">
+    <label>📅 เปรียบเทียบกับวันที่</label>
+    <input type="date" id="exCmpDate">
+  </div>
+  <div class="sb-section field">
+    <label>Head</label>
+    <select id="exHead"><option value="">ทั้งหมด</option></select>
+  </div>
+  <div class="sb-section field">
+    <label>DM</label>
+    <select id="exDm"><option value="">ทั้งหมด</option></select>
   </div>
 
   <div class="sb-section">
-    <label class="auto-toggle"><input type="checkbox" id="smAuto" checked> auto-refresh 30s</label>
+    <label class="auto-toggle"><input type="checkbox" id="smAuto"> auto-refresh 30s</label>
   </div>
 
   <div class="sb-footer">
@@ -122,47 +159,158 @@
 </aside>
 
 <main>
-  <div class="page-title">⚠️ Exception Report</div>
+  <div class="page-title">📊 Daily Exception Report</div>
+  <div class="section-sub" id="headerSub" style="margin-bottom:14px"></div>
   <div id="errBox" class="hidden"></div>
-  <div style="background:#FFF3EC;border:1.5px solid #FFD9C4;border-radius:14px;color:#92400e;padding:10px 16px;margin-bottom:14px;font-size:12px">
-    ตอนนี้ Exception Report แสดงเฉพาะ "บิลที่ถูก void" (fact_void) — ยังไม่ครอบคลุม exception ประเภทอื่น
-  </div>
 
-  <div class="banner">
-    <div class="left">
-      <div><div class="lb">ยอด Void วันนี้</div>
-           <div class="big" style="color:var(--red)" id="valAmt">฿0</div></div>
-    </div>
-    <div style="text-align:right">
-      <div class="lb">เมื่อวาน</div>
-      <div class="val" id="valYday">฿0</div>
+  <div class="field" style="margin-bottom:14px">
+    <label>🌿 Waste แสดงเป็น</label>
+    <div class="radio-group">
+      <label class="radio-pill"><input type="radio" name="wasteView" value="total" checked> Total Waste</label>
+      <label class="radio-pill"><input type="radio" name="wasteView" value="cost"> Stnd Cost</label>
     </div>
   </div>
 
   <div class="kpi-row">
-    <div class="card"><div class="lb">จำนวนบิล void</div><div class="val" id="valBills">0</div></div>
-    <div class="card"><div class="lb">สาขาที่มี void</div><div class="val" id="valShops">0</div></div>
+    <div class="card"><div class="lb">🚫 VOID</div><div class="val" id="kVoid">฿0</div><div class="delta" id="kVoidD"></div></div>
+    <div class="card"><div class="lb">🗑️ DELETE</div><div class="val" id="kDelete">฿0</div><div class="delta" id="kDeleteD"></div></div>
+    <div class="card"><div class="lb" id="kWasteLb">🌿 WASTE</div><div class="val" id="kWaste">฿0</div><div class="delta" id="kWasteD"></div></div>
+    <div class="card"><div class="lb">📊 TOTAL</div><div class="val" id="kTotal">฿0</div><div class="delta" id="kTotalD"></div></div>
   </div>
 
   <hr class="div">
 
-  <div class="chart-box">
-    <div class="section-title">🏆 Top สาขา ยอด Void สูงสุด</div>
-    <canvas id="chartTopShops" height="90"></canvas>
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="void">🚫 VOID</button>
+    <button class="tab-btn" data-tab="delete">🗑️ DELETE</button>
+    <button class="tab-btn" data-tab="waste">🌿 WASTE</button>
+    <button class="tab-btn" data-tab="compare">📅 COMPARE</button>
+    <button class="tab-btn" data-tab="kitchen">🍳 KITCHEN STATUS</button>
+    <button class="tab-btn" data-tab="etl">📋 ETL LOG</button>
   </div>
 
-  <hr class="div">
+  <div class="tab-panel active" id="panel-void">
+    <div class="chart-box">
+      <div class="section-title">🚫 VOID</div>
+      <div class="section-sub" id="voidSub"></div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>#</th><th>รหัสสาขา</th><th>รายละเอียด</th><th>DM</th><th>Head</th>
+          <th class="num">จำนวนบิล</th><th class="num">ยอด Void</th></tr></thead>
+        <tbody id="voidBody"></tbody>
+      </table></div>
+    </div>
+  </div>
 
-  <div class="chart-box">
-    <div class="section-title">🏪 รายสาขา</div>
-    <div class="tbl-wrap">
-      <table>
-        <thead><tr>
-          <th>#</th><th>รหัสสาขา</th><th>สาขา</th><th>DM</th>
-          <th class="num">บิล void</th><th class="num">ยอด void วันนี้</th><th class="num">เทียบเมื่อวาน %</th>
-        </tr></thead>
-        <tbody id="shopsBody"></tbody>
-      </table>
+  <div class="tab-panel" id="panel-delete">
+    <div class="chart-box">
+      <div class="section-title">🗑️ DELETE</div>
+      <div class="section-sub" id="deleteSub"></div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>#</th><th>รหัสสาขา</th><th>รายละเอียด</th><th>DM</th><th>Head</th>
+          <th class="num">จำนวนรายการ</th><th class="num">ยอด Delete</th></tr></thead>
+        <tbody id="deleteBody"></tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="panel-waste">
+    <div class="chart-box">
+      <div class="field" style="margin-bottom:14px">
+        <label>มุมมอง Waste</label>
+        <div class="radio-group">
+          <label class="radio-pill"><input type="radio" name="wasteGrain" value="shop" checked> สรุปต่อสาขา</label>
+          <label class="radio-pill"><input type="radio" name="wasteGrain" value="item_detail"> รายละเอียดต่อ Item</label>
+          <label class="radio-pill"><input type="radio" name="wasteGrain" value="item_summary"> สรุปต่อ Item</label>
+        </div>
+      </div>
+      <div class="field hidden" id="wasteKwWrap" style="margin-bottom:12px;max-width:320px">
+        <label>🔍 ค้นหา item (รหัส/ชื่อ)</label>
+        <input type="text" id="wasteKw">
+      </div>
+      <div class="section-sub" id="wasteSub"></div>
+      <div class="tbl-wrap"><table>
+        <thead id="wasteHead"></thead>
+        <tbody id="wasteBody"></tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="panel-compare">
+    <div class="chart-box">
+      <div class="field" style="margin-bottom:14px">
+        <label>รูปแบบเปรียบเทียบ</label>
+        <div class="radio-group">
+          <label class="radio-pill"><input type="radio" name="cmpMode" value="daily" checked> รายวัน</label>
+          <label class="radio-pill"><input type="radio" name="cmpMode" value="range"> ช่วงวันที่</label>
+          <label class="radio-pill"><input type="radio" name="cmpMode" value="month"> รายเดือน</label>
+          <label class="radio-pill"><input type="radio" name="cmpMode" value="trend"> แนวโน้มรายสัปดาห์</label>
+        </div>
+      </div>
+
+      <div id="cmpDailyInputs" class="section-sub">เทียบ "วันที่" กับ "เปรียบเทียบกับวันที่" จากเมนูด้านซ้าย</div>
+
+      <div id="cmpRangeInputs" class="hidden" style="display:flex;gap:24px;flex-wrap:wrap;margin-bottom:14px">
+        <div style="display:flex;gap:10px">
+          <div class="field"><label>ช่วง A — จาก</label><input type="date" id="cmpAFr"></div>
+          <div class="field"><label>ช่วง A — ถึง</label><input type="date" id="cmpATo"></div>
+        </div>
+        <div style="display:flex;gap:10px">
+          <div class="field"><label>ช่วง B — จาก</label><input type="date" id="cmpBFr"></div>
+          <div class="field"><label>ช่วง B — ถึง</label><input type="date" id="cmpBTo"></div>
+        </div>
+        <button class="chip-btn ghost" id="btnRangeRun" style="align-self:flex-end">▶ เทียบ</button>
+      </div>
+
+      <div id="cmpMonthInputs" class="hidden" style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px">
+        <div class="field"><label>เดือน A</label><select id="cmpAMonth"></select></div>
+        <div class="field"><label>เดือน B</label><select id="cmpBMonth"></select></div>
+        <button class="chip-btn ghost" id="btnMonthRun">▶ เทียบ</button>
+      </div>
+
+      <div id="cmpTrendInputs" class="hidden" style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px">
+        <div class="field"><label>วันในสัปดาห์</label>
+          <select id="trendWd">
+            <option value="0">จันทร์</option><option value="1">อังคาร</option><option value="2">พุธ</option>
+            <option value="3">พฤหัสบดี</option><option value="4">ศุกร์</option><option value="5">เสาร์</option><option value="6">อาทิตย์</option>
+          </select>
+        </div>
+        <div class="field"><label>จาก</label><input type="date" id="trendFr"></div>
+        <div class="field"><label>ถึง</label><input type="date" id="trendTo"></div>
+        <button class="chip-btn ghost" id="btnTrendRun">▶ แสดงแนวโน้ม</button>
+      </div>
+
+      <div id="cmpCardsWrap" style="display:flex;gap:14px;flex-wrap:wrap"></div>
+
+      <div id="cmpTrendWrap" class="hidden">
+        <canvas id="chartTrend" height="100"></canvas>
+        <div class="tbl-wrap" style="margin-top:14px"><table>
+          <thead><tr><th>วันที่</th><th class="num">Void</th><th class="num">Delete</th><th class="num">Waste</th><th class="num">Total</th></tr></thead>
+          <tbody id="trendBody"></tbody>
+        </table></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="panel-kitchen">
+    <div class="chart-box">
+      <div class="section-title">🍳 สถานะการทำงานของครัว</div>
+      <div class="kpi-row" id="kitchenKpi"></div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>ครัว</th><th>ชื่อครัว</th><th>Server IP</th><th>ออนไลน์</th><th>สถานะ</th>
+          <th>Sale Date</th><th class="num">ค้าง (วัน)</th><th>เช็คเมื่อ</th><th>หมายเหตุ</th></tr></thead>
+        <tbody id="kitchenBody"></tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="panel-etl">
+    <div class="chart-box">
+      <div class="section-title">📋 ประวัติการ sync</div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>เวลา</th><th>ตาราง</th><th class="num">ทั้งหมด</th><th class="num">มีแล้ว</th>
+          <th class="num">ดึงใหม่</th><th class="num">ขาด</th><th class="num">แถว</th><th>สถานะ</th></tr></thead>
+        <tbody id="etlBody"></tbody>
+      </table></div>
     </div>
   </div>
 </main>
@@ -179,6 +327,16 @@ document.getElementById('btnLogout').addEventListener('click', () => {
   localStorage.removeItem('sm_token'); localStorage.removeItem('sm_token_exp'); localStorage.removeItem('sm_full_name');
   window.location.href = 'login.html';
 });
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(`panel-${btn.dataset.tab}`).classList.add('active');
+  });
+});
+
 async function apiGet(path) {
   const res = await fetch(`${API_BASE}${path}`, { headers: { Authorization: `Bearer ${token}` } });
   if (res.status === 401) { localStorage.removeItem('sm_token'); window.location.href = 'login.html'; return null; }
@@ -186,78 +344,319 @@ async function apiGet(path) {
   return res.json();
 }
 
-const dateEl  = document.getElementById('smDate');
-const autoEl  = document.getElementById('smAuto');
-const errBox  = document.getElementById('errBox');
-const overlay = document.getElementById('loadOverlay');
+const dateEl    = document.getElementById('smDate');
+const cmpDateEl = document.getElementById('exCmpDate');
+const headEl    = document.getElementById('exHead');
+const dmEl      = document.getElementById('exDm');
+const autoEl    = document.getElementById('smAuto');
+const errBox    = document.getElementById('errBox');
+const overlay   = document.getElementById('loadOverlay');
 let autoTimer = null;
-let chartTopShops = null;
+let dmByHead = {}, dmAll = [];
+let chartTrend = null;
 
 function todayStr() { return new Date().toISOString().slice(0, 10); }
-dateEl.value = todayStr();
+function addDays(str, n) { const d = new Date(str); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); }
+dateEl.value = addDays(todayStr(), -1);
+cmpDateEl.value = addDays(dateEl.value, -1);
 
 const fmtBaht = (n) => '฿' + Math.round(n).toLocaleString('en-US');
 const fmtInt  = (n) => Math.round(n).toLocaleString('en-US');
-const fmtPct  = (n) => (n === null || n === undefined) ? '—' : n.toFixed(1) + '%';
+const wasteMode = () => document.querySelector('input[name="wasteView"]:checked').value;
 
+function pctDelta(curr, prev) {
+  if (!prev) return null;
+  return (curr - prev) / prev * 100;
+}
+function setDelta(id, curr, prev) {
+  const el = document.getElementById(id);
+  const p = pctDelta(curr, prev);
+  if (p === null) { el.textContent = ''; return; }
+  const up = p >= 0;
+  el.style.color = up ? 'var(--red)' : 'var(--green)'; // inverse: เพิ่ม = แย่
+  el.textContent = `${up ? '▲' : '▼'} ${Math.abs(p).toFixed(1)}%`;
+}
+
+// ─────────────────────────── FILTERS (Head/DM) ───────────────────────────
+async function loadFilters() {
+  try {
+    const d = await apiGet('/api/exception/filters');
+    if (!d) return;
+    dmByHead = d.dm_by_head; dmAll = d.dm_all;
+    headEl.innerHTML = '<option value="">ทั้งหมด</option>' + d.heads.map(h => `<option value="${h}">${h}</option>`).join('');
+    refreshDmOptions();
+  } catch (e) { /* ไม่ critical */ }
+}
+function refreshDmOptions() {
+  const list = headEl.value ? (dmByHead[headEl.value] || []) : dmAll;
+  const current = dmEl.value;
+  dmEl.innerHTML = '<option value="">ทั้งหมด</option>' + list.map(dm => `<option value="${dm}">${dm}</option>`).join('');
+  if (list.includes(current)) dmEl.value = current;
+}
+headEl.addEventListener('change', () => { refreshDmOptions(); loadAll(); });
+dmEl.addEventListener('change', loadAll);
+
+// ─────────────────────────── HEADER + KPI ───────────────────────────
 async function loadSummary() {
+  const q = `biz_date=${dateEl.value}&compare_date=${cmpDateEl.value}&dm=${encodeURIComponent(dmEl.value)}&head=${encodeURIComponent(headEl.value)}`;
+  const d = await apiGet(`/api/exception/summary?${q}`);
+  if (!d) return;
+  const t = d.totals, c = d.compare;
+
+  document.getElementById('headerSub').textContent =
+    `${dateEl.value} · Head: ${headEl.value || 'ทั้งหมด'} · DM: ${dmEl.value || 'ทั้งหมด'}`;
+
+  document.getElementById('kVoid').textContent = fmtBaht(t.void);
+  setDelta('kVoidD', t.void, c.void);
+  document.getElementById('kDelete').textContent = fmtBaht(t.delete);
+  setDelta('kDeleteD', t.delete, c.delete);
+
+  const wCurr = wasteMode() === 'cost' ? t.waste_cost : t.waste;
+  const wPrev = wasteMode() === 'cost' ? c.waste_cost : c.waste;
+  document.getElementById('kWasteLb').textContent = wasteMode() === 'cost' ? '🌿 WASTE (COST)' : '🌿 WASTE';
+  document.getElementById('kWaste').textContent = fmtBaht(wCurr);
+  setDelta('kWasteD', wCurr, wPrev);
+
+  const total = t.void + t.delete + wCurr;
+  const totalPrev = c.void + c.delete + wPrev;
+  document.getElementById('kTotal').textContent = fmtBaht(total);
+  setDelta('kTotalD', total, totalPrev);
+}
+document.querySelectorAll('input[name="wasteView"]').forEach(r => r.addEventListener('change', loadSummary));
+
+// ─────────────────────────── VOID / DELETE ───────────────────────────
+async function loadVoid() {
+  const q = `biz_date=${dateEl.value}&dm=${encodeURIComponent(dmEl.value)}&head=${encodeURIComponent(headEl.value)}`;
+  const d = await apiGet(`/api/exception/void?${q}`);
+  if (!d) return;
+  const rows = d.rows;
+  document.getElementById('voidSub').textContent = `${rows.length} สาขา · ยอดรวม ${fmtBaht(rows.reduce((s, r) => s + r.amt, 0))}`;
+  document.getElementById('voidBody').innerHTML = rows.map((r, i) => `
+    <tr><td>${i + 1}</td><td>${r.shop_code}</td><td>${r.shop_name}</td><td>${r.dm || '—'}</td><td>${r.head || '—'}</td>
+      <td class="num">${fmtInt(r.bills)}</td><td class="num">${fmtBaht(r.amt)}</td></tr>`
+  ).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--muted)">ไม่มีข้อมูล Void</td></tr>';
+}
+
+async function loadDelete() {
+  const q = `biz_date=${dateEl.value}&dm=${encodeURIComponent(dmEl.value)}&head=${encodeURIComponent(headEl.value)}`;
+  const d = await apiGet(`/api/exception/delete?${q}`);
+  if (!d) return;
+  const rows = d.rows;
+  document.getElementById('deleteSub').textContent = `${rows.length} สาขา · ยอดรวม ${fmtBaht(rows.reduce((s, r) => s + r.amt, 0))}`;
+  document.getElementById('deleteBody').innerHTML = rows.map((r, i) => `
+    <tr><td>${i + 1}</td><td>${r.shop_code}</td><td>${r.shop_name}</td><td>${r.dm || '—'}</td><td>${r.head || '—'}</td>
+      <td class="num">${fmtInt(r.items)}</td><td class="num">${fmtBaht(r.amt)}</td></tr>`
+  ).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--muted)">ไม่มีข้อมูล Delete</td></tr>';
+}
+
+// ─────────────────────────── WASTE ───────────────────────────
+function wasteGrain() { return document.querySelector('input[name="wasteGrain"]:checked').value; }
+document.querySelectorAll('input[name="wasteGrain"]').forEach(r => r.addEventListener('change', () => {
+  document.getElementById('wasteKwWrap').classList.toggle('hidden', wasteGrain() === 'shop');
+  loadWaste();
+}));
+document.getElementById('wasteKw').addEventListener('input', loadWaste);
+
+async function loadWaste() {
+  const grain = wasteGrain();
+  const q = `biz_date=${dateEl.value}&dm=${encodeURIComponent(dmEl.value)}&head=${encodeURIComponent(headEl.value)}&grain=${grain}`;
+  const d = await apiGet(`/api/exception/waste?${q}`);
+  if (!d) return;
+  let rows = d.rows;
+  const kw = document.getElementById('wasteKw').value.trim().toLowerCase();
+
+  const thead = document.getElementById('wasteHead');
+  const tbody = document.getElementById('wasteBody');
+
+  if (grain === 'shop') {
+    const col = wasteMode() === 'cost' ? 'stnd_cost' : 'total_waste';
+    const colLb = wasteMode() === 'cost' ? 'Stnd Cost' : 'Total Waste';
+    document.getElementById('wasteSub').textContent = `${rows.length} รายการ · ยอดรวม ${fmtBaht(rows.reduce((s, r) => s + r[col], 0))}`;
+    thead.innerHTML = `<tr><th>#</th><th>รหัสสาขา</th><th>รายละเอียด</th><th>DM</th><th>Head</th><th>Reason</th><th class="num">${colLb}</th></tr>`;
+    tbody.innerHTML = rows.map((r, i) => `
+      <tr><td>${i + 1}</td><td>${r.shop_code}</td><td>${r.shop_name}</td><td>${r.dm || '—'}</td><td>${r.head || '—'}</td>
+        <td>${r.reason || '—'}</td><td class="num">${fmtBaht(r[col])}</td></tr>`
+    ).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--muted)">ไม่มีข้อมูล Waste</td></tr>';
+    return;
+  }
+
+  if (kw) rows = rows.filter(r => r.item_code.toLowerCase().includes(kw) || (r.item_name || '').toLowerCase().includes(kw));
+
+  if (grain === 'item_detail') {
+    document.getElementById('wasteSub').textContent = `${rows.length} รายการ (row) · จำนวนรวม ${fmtInt(rows.reduce((s, r) => s + r.qty, 0))}`;
+    thead.innerHTML = `<tr><th>#</th><th>รหัสสาขา</th><th>สาขา</th><th>รหัส Item</th><th>รายการ</th><th>หน่วย</th><th class="num">จำนวน</th></tr>`;
+    tbody.innerHTML = rows.map((r, i) => `
+      <tr><td>${i + 1}</td><td>${r.shop_code}</td><td>${r.shop_name}</td><td>${r.item_code}</td>
+        <td>${r.item_name}</td><td>${r.unit || '—'}</td><td class="num">${r.qty.toLocaleString('en-US', {maximumFractionDigits: 2})}</td></tr>`
+    ).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--muted)">ไม่มีข้อมูล</td></tr>';
+  } else { // item_summary
+    document.getElementById('wasteSub').textContent = `Item ไม่ซ้ำ ${rows.length} · จำนวนรวม ${fmtInt(rows.reduce((s, r) => s + r.qty, 0))}`;
+    thead.innerHTML = `<tr><th>#</th><th>รหัส Item</th><th>รายการ</th><th>หน่วย</th><th class="num">จำนวนรวม</th><th class="num">จำนวนสาขา</th></tr>`;
+    tbody.innerHTML = rows.map((r, i) => `
+      <tr><td>${i + 1}</td><td>${r.item_code}</td><td>${r.item_name}</td><td>${r.unit || '—'}</td>
+        <td class="num">${r.qty.toLocaleString('en-US', {maximumFractionDigits: 2})}</td><td class="num">${fmtInt(r.shop_cnt)}</td></tr>`
+    ).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--muted)">ไม่มีข้อมูล</td></tr>';
+  }
+}
+
+// ─────────────────────────── COMPARE ───────────────────────────
+function cmpMode() { return document.querySelector('input[name="cmpMode"]:checked').value; }
+document.querySelectorAll('input[name="cmpMode"]').forEach(r => r.addEventListener('change', () => {
+  const m = cmpMode();
+  document.getElementById('cmpDailyInputs').classList.toggle('hidden', m !== 'daily');
+  document.getElementById('cmpRangeInputs').classList.toggle('hidden', m !== 'range');
+  document.getElementById('cmpMonthInputs').classList.toggle('hidden', m !== 'month');
+  document.getElementById('cmpTrendInputs').classList.toggle('hidden', m !== 'trend');
+  document.getElementById('cmpCardsWrap').classList.toggle('hidden', m === 'trend');
+  document.getElementById('cmpTrendWrap').classList.toggle('hidden', m !== 'trend');
+  if (m === 'daily') loadCompareDaily();
+}));
+
+function cmpCardHtml(label, color, aVal, bVal, aLb, bLb) {
+  const diff = aVal - bVal;
+  const pct = bVal !== 0 ? Math.abs(diff / bVal * 100) : null;
+  let arrow = '—', cls = 'color:var(--muted)';
+  if (diff > 0) { arrow = '▲'; cls = 'color:var(--red)'; }
+  else if (diff < 0) { arrow = '▼'; cls = 'color:var(--green)'; }
+  return `<div class="cmp-card" style="border-top:4px solid ${color}">
+    <div class="cmp-label">${label}</div>
+    <div class="cmp-row"><span class="cmp-date">${aLb}</span><span class="cmp-amt">${fmtBaht(aVal)}</span></div>
+    <div class="cmp-row"><span class="cmp-date">${bLb}</span><span class="cmp-amt">${fmtBaht(bVal)}</span></div>
+    <hr class="cmp-div">
+    <div class="cmp-row"><span class="cmp-date">${arrow} ${fmtBaht(Math.abs(diff))}</span>
+      <span class="cmp-delta" style="${cls}">${arrow} ${pct === null ? 'N/A' : pct.toFixed(1) + '%'}</span></div>
+  </div>`;
+}
+function renderCmpCards(a, b, aLb, bLb) {
+  const wKey = wasteMode() === 'cost' ? 'waste_cost' : 'waste';
+  const aTotal = a.void + a.delete + a[wKey], bTotal = b.void + b.delete + b[wKey];
+  document.getElementById('cmpCardsWrap').innerHTML =
+    cmpCardHtml('🚫 VOID', '#ef4444', a.void, b.void, aLb, bLb) +
+    cmpCardHtml('🗑️ DELETE', '#E91E8C', a.delete, b.delete, aLb, bLb) +
+    cmpCardHtml(wasteMode() === 'cost' ? '🌿 WASTE (COST)' : '🌿 WASTE', '#10b981', a[wKey], b[wKey], aLb, bLb) +
+    cmpCardHtml('📊 TOTAL', '#FF671F', aTotal, bTotal, aLb, bLb);
+}
+
+async function loadCompareDaily() {
+  const d = await apiGet(`/api/exception/compare?mode=daily&date_a=${dateEl.value}&date_b=${cmpDateEl.value}`);
+  if (!d) return;
+  renderCmpCards(d.a, d.b, dateEl.value, cmpDateEl.value);
+}
+document.getElementById('btnRangeRun').addEventListener('click', async () => {
+  const q = `mode=range&a_fr=${cmpAFr.value}&a_to=${cmpATo.value}&b_fr=${cmpBFr.value}&b_to=${cmpBTo.value}`;
+  const d = await apiGet(`/api/exception/compare?${q}`);
+  if (!d) return;
+  renderCmpCards(d.a, d.b, `${cmpAFr.value} – ${cmpATo.value}`, `${cmpBFr.value} – ${cmpBTo.value}`);
+});
+document.getElementById('btnMonthRun').addEventListener('click', async () => {
+  const [ay, am] = cmpAMonth.value.split('-'); const [by, bm] = cmpBMonth.value.split('-');
+  const aLast = new Date(ay, am, 0).getDate(); const bLast = new Date(by, bm, 0).getDate();
+  const q = `mode=range&a_fr=${cmpAMonth.value}-01&a_to=${cmpAMonth.value}-${String(aLast).padStart(2,'0')}` +
+            `&b_fr=${cmpBMonth.value}-01&b_to=${cmpBMonth.value}-${String(bLast).padStart(2,'0')}`;
+  const d = await apiGet(`/api/exception/compare?${q}`);
+  if (!d) return;
+  renderCmpCards(d.a, d.b, cmpAMonth.value, cmpBMonth.value);
+});
+
+function populateMonthOptions() {
+  let d = new Date(); d.setDate(1);
+  let opts = '';
+  for (let i = 0; i < 12; i++) {
+    const ym = d.toISOString().slice(0, 7);
+    opts += `<option value="${ym}">${ym}</option>`;
+    d.setMonth(d.getMonth() - 1);
+  }
+  cmpAMonth.innerHTML = opts; cmpBMonth.innerHTML = opts;
+  cmpBMonth.selectedIndex = 1;
+}
+
+document.getElementById('btnTrendRun').addEventListener('click', async () => {
+  const q = `weekday=${trendWd.value}&fr=${trendFr.value}&to=${trendTo.value}`;
+  const d = await apiGet(`/api/exception/compare-trend?${q}`);
+  if (!d) return;
+  const pts = d.points;
+  document.getElementById('trendBody').innerHTML = pts.map(p => `
+    <tr><td>${p.date}</td><td class="num">${fmtBaht(p.void)}</td><td class="num">${fmtBaht(p.delete)}</td>
+      <td class="num">${fmtBaht(p.waste)}</td><td class="num">${fmtBaht(p.total)}</td></tr>`
+  ).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--muted)">ไม่มีข้อมูล</td></tr>';
+
+  const ctx = document.getElementById('chartTrend');
+  const cfg = {
+    type: 'line',
+    data: { labels: pts.map(p => p.date), datasets: [
+      { label: 'Void', data: pts.map(p => p.void), borderColor: '#ef4444', tension: 0.3 },
+      { label: 'Delete', data: pts.map(p => p.delete), borderColor: '#E91E8C', tension: 0.3 },
+      { label: 'Waste', data: pts.map(p => p.waste), borderColor: '#10b981', tension: 0.3 },
+      { label: 'Total', data: pts.map(p => p.total), borderColor: '#FF671F', tension: 0.3, borderWidth: 3 },
+    ]},
+    options: { responsive: true, plugins: { legend: { position: 'top' } }, scales: { y: { grid: { color: '#f0ece6' } } } },
+  };
+  if (chartTrend) chartTrend.destroy();
+  chartTrend = new Chart(ctx, cfg);
+});
+
+// ─────────────────────────── KITCHEN STATUS ───────────────────────────
+const STATE_LABEL = { OK: '✅ ปกติ', WARN: '⚠️ ค้าง', CRIT: '⛔ ค้างนาน', OFFLINE: '🔌 ต่อไม่ได้', NODATA: '❓ ไม่มีข้อมูล' };
+
+async function loadKitchen() {
+  const d = await apiGet('/api/exception/kitchen-status');
+  if (!d) return;
+  const rows = d.rows;
+  const cnt = s => rows.filter(r => r.state === s).length;
+  document.getElementById('kitchenKpi').innerHTML = `
+    <div class="card"><div class="lb">🏭 ครัวทั้งหมด</div><div class="val">${rows.length}</div></div>
+    <div class="card"><div class="lb">✅ ปกติ</div><div class="val">${cnt('OK')}</div></div>
+    <div class="card"><div class="lb">⚠️ ค้าง</div><div class="val">${cnt('WARN')}</div></div>
+    <div class="card"><div class="lb">⛔ ค้างนาน</div><div class="val">${cnt('CRIT')}</div></div>
+    <div class="card"><div class="lb">🔌 ต่อไม่ได้</div><div class="val">${cnt('OFFLINE')}</div></div>`;
+  document.getElementById('kitchenBody').innerHTML = rows.map(r => `
+    <tr><td>${r.kitchen_code}</td><td>${r.kitchen_name}</td><td>${r.host || '—'}</td>
+      <td>${r.online ? '🟢' : '🔴'}</td>
+      <td><span class="state-badge state-${r.state}">${STATE_LABEL[r.state]}</span></td>
+      <td>${r.sale_date || '—'}</td><td class="num">${r.days_behind ?? '—'}</td>
+      <td>${r.checked_at ? r.checked_at.slice(0, 16) : '—'}</td><td>${r.err_msg || '—'}</td></tr>`
+  ).join('') || '<tr><td colspan="9" style="text-align:center;color:var(--muted)">ยังไม่มีข้อมูล kitchen_status</td></tr>';
+}
+
+// ─────────────────────────── ETL LOG ───────────────────────────
+async function loadEtlLog() {
+  const d = await apiGet(`/api/exception/etl-log?biz_date=${dateEl.value}`);
+  if (!d) return;
+  document.getElementById('etlBody').innerHTML = d.rows.map(r => `
+    <tr><td>${r.run_at ? r.run_at.slice(0, 19) : '—'}</td><td>${r.table_name || '—'}</td>
+      <td class="num">${r.shops_total ?? '—'}</td><td class="num">${r.shops_already ?? '—'}</td>
+      <td class="num">${r.shops_synced ?? '—'}</td><td class="num">${r.shops_missing ?? '—'}</td>
+      <td class="num">${r.rows_inserted ?? '—'}</td><td>${r.status || '—'}</td></tr>`
+  ).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--muted)">ยังไม่มี ETL log</td></tr>';
+}
+
+// ─────────────────────────── LOAD ALL / AUTO-REFRESH ───────────────────────────
+async function loadAll() {
   overlay.classList.remove('hidden'); errBox.classList.add('hidden');
   try {
-    const d = await apiGet(`/api/exception/summary?biz_date=${dateEl.value}`);
-    if (!d) return;
-    render(d);
+    await Promise.all([loadSummary(), loadVoid(), loadDelete(), loadWaste(), loadCompareDaily(), loadKitchen(), loadEtlLog()]);
   } catch (e) { errBox.textContent = e.message; errBox.classList.remove('hidden'); }
   finally { overlay.classList.add('hidden'); }
 }
 
-function render(d) {
-  const t = d.totals;
-  document.getElementById('valAmt').textContent = fmtBaht(t.today_amt);
-  document.getElementById('valYday').textContent = fmtBaht(t.yday_amt);
-  document.getElementById('valBills').textContent = fmtInt(t.today_bills);
-  document.getElementById('valShops').textContent = fmtInt(t.today_shops);
-
-  renderTopShops(d.shops.slice(0, 15));
-  renderShopsTable(d.shops);
-}
-
-function renderTopShops(rows) {
-  const ctx = document.getElementById('chartTopShops');
-  const labels = rows.map(r => `${r.shop_code} ${r.shop_name.slice(0, 16)}`);
-  const cfg = {
-    type: 'bar',
-    data: { labels, datasets: [
-      { label: 'วันนี้', data: rows.map(r => r.today_amt), backgroundColor: '#dc2626' },
-      { label: 'เมื่อวาน', data: rows.map(r => r.yday_amt), backgroundColor: '#fca5a5' },
-    ]},
-    options: { responsive: true, plugins: { legend: { position: 'top' } },
-      scales: { x: { ticks: { autoSkip: false, maxRotation: 50, minRotation: 40 } }, y: { grid: { color: '#f0ece6' } } } },
-  };
-  if (chartTopShops) chartTopShops.destroy();
-  chartTopShops = new Chart(ctx, cfg);
-}
-
-function renderShopsTable(rows) {
-  const body = document.getElementById('shopsBody');
-  body.innerHTML = rows.map((r, i) => `
-    <tr>
-      <td>${i + 1}</td><td>${r.shop_code}</td><td>${r.shop_name}</td><td>${r.dm || '—'}</td>
-      <td class="num">${fmtInt(r.today_bills)}</td>
-      <td class="num">${fmtBaht(r.today_amt)}</td>
-      <td class="num">${fmtPct(r.diff_pct)}</td>
-    </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--muted)">ยังไม่มีข้อมูล</td></tr>';
-}
-
 function setupAutoRefresh() {
   if (autoTimer) clearInterval(autoTimer);
-  if (autoEl.checked && dateEl.value === todayStr()) autoTimer = setInterval(loadSummary, 30000);
+  if (autoEl.checked) autoTimer = setInterval(loadAll, 30000);
 }
 
-dateEl.addEventListener('change', () => { loadSummary(); setupAutoRefresh(); });
+dateEl.addEventListener('change', () => { cmpDateEl.value = addDays(dateEl.value, -1); loadAll(); });
+cmpDateEl.addEventListener('change', loadAll);
 autoEl.addEventListener('change', setupAutoRefresh);
-document.getElementById('btnRefresh').addEventListener('click', loadSummary);
+document.getElementById('btnRefresh').addEventListener('click', loadAll);
 
-(async function init() { await loadSummary(); setupAutoRefresh(); })();
+(async function init() {
+  populateMonthOptions();
+  const now = todayStr();
+  trendFr.value = addDays(now, -56); trendTo.value = now;
+  await loadFilters();
+  await loadAll();
+  setupAutoRefresh();
+})();
 </script>
 </body>
 </html>
