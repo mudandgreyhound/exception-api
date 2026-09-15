@@ -5,9 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Transfer In · Dunkin'</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;0,900;1,800&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.1/chart.umd.min.js"></script>
-<style>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;0,900;1,800&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet"><style>
   :root{
     --orange:#FF671F; --orange-dk:#e55a15; --magenta:#E91E8C; --magenta-dk:#CE1E7C;
     --cream:#FFF8DC; --ink:#1C1C1C; --muted:#9ca3af; --label:#b08968;
@@ -94,6 +92,19 @@
   .tab-panel.active{ display:block; }
   .item-summary{ font-weight:800; font-family:'Nunito',sans-serif; font-size:15px; margin-bottom:12px; color:#374151; }
 
+  .ti-filters{ display:flex; gap:16px; flex-wrap:wrap; margin-bottom:12px; align-items:flex-end; }
+  .chip-group{ display:flex; gap:6px; flex-wrap:wrap; }
+  .chip-check{ display:flex; align-items:center; gap:5px; padding:7px 12px; border-radius:20px;
+               border:1.5px solid var(--border); background:var(--cream); font-size:12px;
+               font-weight:700; color:#374151; cursor:pointer; user-select:none; }
+  .chip-check:has(input:checked){ background:#FFF3EC; border-color:var(--orange); color:var(--orange-dk); }
+  .chip-check input{ accent-color:var(--orange); }
+  #dmFilter{ min-width:160px; }
+  .ti-legend{ font-size:12px; color:var(--muted); line-height:1.7; margin:-2px 0 10px; }
+  .ti-legend b{ color:#6b7280; }
+  .ti-pager{ display:flex; align-items:center; justify-content:center; gap:16px; margin-top:14px; }
+  .ti-pager span{ color:var(--muted); font-size:13px; }
+
   #loadOverlay{ position:fixed; inset:0; background:rgba(255,248,220,.7); display:flex; align-items:center;
     justify-content:center; font-family:'Nunito',sans-serif; font-weight:800; color:var(--orange); z-index:50; }
   #errBox{ background:#FFF3EC; border:1.5px solid #FFD9C4; border-radius:14px; color:#c2440a;
@@ -139,23 +150,12 @@
   <div class="page-title">🚚 Transfer In</div>
   <div id="errBox" class="hidden"></div>
 
-  <div class="banner">
-    <div class="left">
-      <div><div class="lb">ยอด Transfer In วันนี้</div>
-           <div class="big" style="color:var(--orange)" id="valAmt">฿0</div></div>
-    </div>
-    <div style="text-align:right">
-      <div class="lb">เทียบเมื่อวาน</div>
-      <div class="val" id="valDiffPct">0.0%</div>
-    </div>
-  </div>
-
   <div class="kpi-row">
-    <div class="card"><div class="lb">จำนวนเอกสาร</div><div class="val" id="valDocs">0</div></div>
-    <div class="card"><div class="lb">จำนวนรายการ (line)</div><div class="val" id="valLines">0</div></div>
-    <div class="card"><div class="lb">จำนวนหน่วย</div><div class="val" id="valQty">0</div></div>
-    <div class="card"><div class="lb">สาขาที่มีข้อมูล</div><div class="val" id="valShops">0</div></div>
-    <div class="card"><div class="lb">SKU ต่างกัน</div><div class="val" id="valItems">0</div></div>
+    <div class="card"><div class="lb">รับเข้ารวม (ชิ้น)</div><div class="val" id="valIn">0</div></div>
+    <div class="card"><div class="lb">ขายออก</div><div class="val" id="valSold">0</div></div>
+    <div class="card"><div class="lb">ยอด Void</div><div class="val" id="valVoid">0</div></div>
+    <div class="card"><div class="lb">คงเหลือ</div><div class="val" id="valRemain">0</div></div>
+    <div class="card"><div class="lb" id="valShopsLb">สาขา online</div><div class="val" id="valShops">0</div></div>
   </div>
 
   <hr class="div">
@@ -169,35 +169,77 @@
   <div class="tab-panel active" id="panel-status">
     <div class="chart-box">
       <div class="section-title">🏬 สถานะสาขา</div>
-      <div class="section-sub">สถานะ sync วันนี้ — แสดงเฉพาะสาขาที่ออนไลน์, error ขึ้นก่อน</div>
+
+      <div class="ti-filters">
+        <div class="field">
+          <label>กรองสถานะ</label>
+          <div class="chip-group" id="statusFilter">
+            <label class="chip-check"><input type="checkbox" value="has" checked> ✅ มีของ</label>
+            <label class="chip-check"><input type="checkbox" value="empty"> ➖ ว่าง</label>
+            <label class="chip-check"><input type="checkbox" value="offline"> ⛔ offline</label>
+            <label class="chip-check"><input type="checkbox" value="offline_stale"> ⛔ offline (ค้าง)</label>
+          </div>
+        </div>
+        <div class="field">
+          <label>กรอง DM (ว่าง = ทั้งหมด)</label>
+          <select id="dmFilter" multiple size="1"></select>
+        </div>
+        <div class="field" style="flex:1;min-width:200px">
+          <label>🔍 ค้นหา รหัส/ชื่อสาขา</label>
+          <input type="text" id="kwFilter" placeholder="รหัสหรือชื่อสาขา">
+        </div>
+        <div class="field">
+          <label>ต่อหน้า</label>
+          <select id="perPage">
+            <option>25</option><option>50</option><option>100</option><option>200</option><option>300</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="ti-legend">
+        <b>ความหมายสถานะ:</b>
+        ✅ <b>มีของ</b> = ต่อติด + มีรับเข้า ·
+        ➖ <b>ว่าง</b> = ต่อติดแต่ยังไม่มีรับเข้า ·
+        ⛔ <b>offline</b> = ต่อไม่ได้ (ไม่มีข้อมูล) ·
+        ⛔ <b>offline (ค้าง)</b> = ต่อไม่ได้ แต่มียอดค้างจากรอบที่ดึงสำเร็จก่อนหน้า
+      </div>
+
       <div class="tbl-wrap">
         <table>
           <thead><tr>
-            <th>รหัสสาขา</th><th>สาขา</th><th>สถานะ</th>
-            <th class="num">เอกสาร</th><th>ข้อความ error</th><th>เช็คล่าสุด</th>
+            <th>รหัสสาขา</th><th>รายละเอียด</th><th>สถานะ</th>
+            <th class="num">ยอดรับเข้า</th><th class="num">โอนออก</th><th class="num">ขายออก</th>
+            <th class="num">ยอด Void</th><th class="num">คงเหลือ</th><th class="num">เอกสาร</th>
+            <th>DM</th><th>ตรวจล่าสุด</th>
           </tr></thead>
           <tbody id="statusBody"></tbody>
         </table>
+      </div>
+
+      <div class="ti-pager">
+        <button class="chip-btn ghost" id="btnPrev">◀ ก่อนหน้า</button>
+        <span id="pagerLabel"></span>
+        <button class="chip-btn ghost" id="btnNext">ถัดไป ▶</button>
       </div>
     </div>
   </div>
 
   <div class="tab-panel" id="panel-byshop">
     <div class="chart-box">
-      <div class="section-title">🏆 Top สาขา วันนี้ vs เมื่อวาน</div>
-      <canvas id="chartTopShops" height="90"></canvas>
-    </div>
-    <hr class="div">
-    <div class="chart-box">
-      <div class="section-title">🏪 รายสาขา</div>
+      <div class="section-title">📦 รายสาขา</div>
+      <div class="field" style="margin-bottom:14px">
+        <label>เลือกสาขา</label>
+        <select id="shopSelect" style="min-width:320px"></select>
+      </div>
+      <div class="item-summary" id="shopSummary"></div>
       <div class="tbl-wrap">
         <table>
           <thead><tr>
-            <th>#</th><th>รหัสสาขา</th><th>สาขา</th><th>DM</th>
-            <th class="num">เอกสาร</th><th class="num">จำนวน</th><th class="num">ยอดวันนี้</th>
-            <th class="num">เทียบเมื่อวาน %</th>
+            <th>#</th><th>รหัสสินค้า</th><th>ชื่อสินค้า</th>
+            <th class="num">รับเข้า</th><th class="num">ขายออก</th><th class="num">ยอด Void</th>
+            <th class="num">เหลือ</th><th>ครัวต้นทาง</th>
           </tr></thead>
-          <tbody id="shopsBody"></tbody>
+          <tbody id="byShopBody"></tbody>
         </table>
       </div>
     </div>
@@ -258,7 +300,9 @@ const autoEl  = document.getElementById('smAuto');
 const errBox  = document.getElementById('errBox');
 const overlay = document.getElementById('loadOverlay');
 let autoTimer = null;
-let chartTopShops = null;
+let allShops = [];
+let statusPage = 1;
+const PER_PAGE_DEFAULT = 25;
 
 function todayStr() { return new Date().toISOString().slice(0, 10); }
 dateEl.value = todayStr();
@@ -266,6 +310,13 @@ dateEl.value = todayStr();
 const fmtBaht = (n) => '฿' + Math.round(n).toLocaleString('en-US');
 const fmtInt  = (n) => Math.round(n).toLocaleString('en-US');
 const fmtPct  = (n) => (n === null || n === undefined) ? '—' : n.toFixed(1) + '%';
+
+const STATUS_LABEL = {
+  has: '<span class="badge ok">✅ มีของ</span>',
+  empty: '<span class="badge err" style="background:#F3F4F6;color:#6b7280">➖ ว่าง</span>',
+  offline: '<span class="badge off">⛔ offline</span>',
+  offline_stale: '<span class="badge off">⛔ offline (ค้าง)</span>',
+};
 
 async function loadSummary() {
   overlay.classList.remove('hidden'); errBox.classList.add('hidden');
@@ -279,56 +330,120 @@ async function loadSummary() {
 
 function render(d) {
   const t = d.totals;
-  document.getElementById('valAmt').textContent = fmtBaht(t.today_amt);
-  const diffEl = document.getElementById('valDiffPct');
-  diffEl.style.color = t.diff_pct >= 0 ? 'var(--green)' : 'var(--red)';
-  diffEl.textContent = `${t.diff_pct >= 0 ? '▲' : '▼'} ${Math.abs(t.diff_pct).toFixed(1)}%`;
+  document.getElementById('valIn').textContent = fmtInt(t.tr_in);
+  document.getElementById('valSold').textContent = fmtInt(t.sold);
+  document.getElementById('valVoid').textContent = fmtInt(t.void_qty);
+  document.getElementById('valRemain').textContent = fmtInt(t.remain);
+  if (dateEl.value === todayStr()) {
+    document.getElementById('valShopsLb').textContent = 'สาขา online';
+    document.getElementById('valShops').textContent = `${t.n_online}/${t.n_total}`;
+  } else {
+    document.getElementById('valShopsLb').textContent = 'สาขาที่รับเข้า';
+    document.getElementById('valShops').textContent = fmtInt(t.n_active);
+  }
 
-  document.getElementById('valDocs').textContent = fmtInt(t.total_docs);
-  document.getElementById('valLines').textContent = fmtInt(t.total_lines);
-  document.getElementById('valQty').textContent = fmtInt(t.total_qty);
-  document.getElementById('valShops').textContent = fmtInt(t.shops_with_data);
-  document.getElementById('valItems').textContent = fmtInt(t.distinct_items);
-
-  renderTopShops(d.shops.slice(0, 15));
-  renderStatus(d.status);
-  renderShopsTable(d.shops);
+  allShops = d.shops || [];
+  populateDmFilter(allShops);
+  statusPage = 1;
+  renderStatus();
 }
 
-function renderTopShops(rows) {
-  const ctx = document.getElementById('chartTopShops');
-  const labels = rows.map(r => `${r.shop_code} ${r.shop_name.slice(0, 16)}`);
-  const cfg = {
-    type: 'bar',
-    data: { labels, datasets: [
-      { label: 'วันนี้', data: rows.map(r => r.today_amt), backgroundColor: '#FF671F' },
-      { label: 'เมื่อวาน', data: rows.map(r => r.yday_amt), backgroundColor: '#f6c9a8' },
-    ]},
-    options: { responsive: true, plugins: { legend: { position: 'top' } },
-      scales: { x: { ticks: { autoSkip: false, maxRotation: 50, minRotation: 40 } }, y: { grid: { color: '#f0ece6' } } } },
-  };
-  if (chartTopShops) chartTopShops.destroy();
-  chartTopShops = new Chart(ctx, cfg);
+function populateDmFilter(rows) {
+  const dmEl = document.getElementById('dmFilter');
+  const current = Array.from(dmEl.selectedOptions).map(o => o.value);
+  const dms = [...new Set(rows.map(r => r.dm).filter(Boolean))].sort();
+  dmEl.innerHTML = dms.map(dm => `<option value="${dm}">${dm}</option>`).join('');
+  Array.from(dmEl.options).forEach(o => { if (current.includes(o.value)) o.selected = true; });
 }
 
-function renderStatus(rows) {
+function getFilteredShops() {
+  const statusPick = Array.from(document.querySelectorAll('#statusFilter input:checked')).map(i => i.value);
+  const dmPick = Array.from(document.getElementById('dmFilter').selectedOptions).map(o => o.value);
+  const kw = document.getElementById('kwFilter').value.trim().toLowerCase();
+
+  let rows = allShops;
+  if (statusPick.length) rows = rows.filter(r => statusPick.includes(r.status));
+  if (dmPick.length) rows = rows.filter(r => dmPick.includes(r.dm));
+  if (kw) rows = rows.filter(r =>
+    r.shop_code.toLowerCase().includes(kw) || (r.shop_name || '').toLowerCase().includes(kw));
+  return rows.slice().sort((a, b) => b.tr_in - a.tr_in);
+}
+
+function renderStatus() {
+  const rows = getFilteredShops();
+  const perPage = parseInt(document.getElementById('perPage').value, 10) || PER_PAGE_DEFAULT;
+  const total = rows.length;
+  const pages = Math.max(1, Math.ceil(total / perPage));
+  if (statusPage > pages) statusPage = pages;
+  const start = (statusPage - 1) * perPage;
+  const pageRows = rows.slice(start, start + perPage);
+
   const body = document.getElementById('statusBody');
-  body.innerHTML = (rows || []).filter(r => r.online).map(r => {
-    let badge;
-    if (!r.online) badge = '<span class="badge off">offline</span>';
-    else if (r.err_msg) badge = '<span class="badge err">มี error</span>';
-    else badge = '<span class="badge ok">ปกติ</span>';
-    return `
+  body.innerHTML = pageRows.map(r => `
     <tr>
       <td>${r.shop_code}</td>
-      <td>${r.shop_name}</td>
-      <td>${badge}</td>
+      <td>${r.shop_name || '—'}</td>
+      <td>${STATUS_LABEL[r.status] || r.status}</td>
+      <td class="num">${fmtInt(r.tr_in)}</td>
+      <td class="num">${fmtInt(r.tr_out)}</td>
+      <td class="num">${fmtInt(r.sold)}</td>
+      <td class="num">${fmtInt(r.void_qty)}</td>
+      <td class="num">${fmtInt(r.remain)}</td>
       <td class="num">${r.doc_cnt ?? '—'}</td>
-      <td style="max-width:360px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.err_msg || '—'}</td>
-      <td>${r.checked_at ? r.checked_at.replace('T',' ') : '—'}</td>
-    </tr>`;
-  }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--muted)">ยังไม่มีข้อมูล</td></tr>';
+      <td>${r.dm || '—'}</td>
+      <td>${r.checked_at ? r.checked_at.replace('T', ' ').slice(0, 16) : '—'}</td>
+    </tr>`).join('') || '<tr><td colspan="11" style="text-align:center;color:var(--muted)">ไม่พบสาขาตามเงื่อนไขที่กรอง</td></tr>';
+
+  document.getElementById('pagerLabel').textContent = `หน้า ${statusPage} / ${pages} · แสดง ${pageRows.length} จาก ${total} สาขา`;
+  document.getElementById('btnPrev').disabled = statusPage <= 1;
+  document.getElementById('btnNext').disabled = statusPage >= pages;
 }
+
+document.querySelectorAll('#statusFilter input').forEach(i => i.addEventListener('change', () => { statusPage = 1; renderStatus(); }));
+document.getElementById('dmFilter').addEventListener('change', () => { statusPage = 1; renderStatus(); });
+document.getElementById('kwFilter').addEventListener('input', () => { statusPage = 1; renderStatus(); });
+document.getElementById('perPage').addEventListener('change', () => { statusPage = 1; renderStatus(); });
+document.getElementById('btnPrev').addEventListener('click', () => { statusPage--; renderStatus(); });
+document.getElementById('btnNext').addEventListener('click', () => { statusPage++; renderStatus(); });
+
+// ─────────────────────────── รายสาขา ───────────────────────────
+const shopSelect = document.getElementById('shopSelect');
+
+async function loadShopOptions() {
+  try {
+    const data = await apiGet(`/api/transfer-in/shop-options?biz_date=${dateEl.value}`);
+    if (!data) return;
+    const current = shopSelect.value;
+    shopSelect.innerHTML = data.shops.map(s =>
+      `<option value="${s.shop_code}">${s.shop_code}${s.shop_name ? ' - ' + s.shop_name : ''}</option>`).join('');
+    if (data.shops.some(s => s.shop_code === current)) shopSelect.value = current;
+    if (shopSelect.value) loadByShop();
+  } catch (e) { /* ไม่ critical */ }
+}
+
+async function loadByShop() {
+  if (!shopSelect.value) return;
+  try {
+    const data = await apiGet(`/api/transfer-in/by-shop?biz_date=${dateEl.value}&branch=${encodeURIComponent(shopSelect.value)}`);
+    if (!data) return;
+    const opt = shopSelect.options[shopSelect.selectedIndex];
+    document.getElementById('shopSummary').textContent =
+      `${opt ? opt.textContent : data.branch} · รับเข้า ${fmtInt(data.total_tr_in)} · ขายออก ${fmtInt(data.total_sold)} · ` +
+      `void ${fmtInt(data.total_void)} · เหลือ ${fmtInt(data.total_remain)} ชิ้น · ${data.rows.length} รายการ`;
+    const body = document.getElementById('byShopBody');
+    body.innerHTML = data.rows.map((r, i) => `
+      <tr>
+        <td>${i + 1}</td><td>${r.item_code}</td><td>${r.item_name || '—'}</td>
+        <td class="num">${fmtInt(r.tr_in)}</td>
+        <td class="num">${fmtInt(r.sold)}</td>
+        <td class="num">${fmtInt(r.void_qty)}</td>
+        <td class="num">${fmtInt(r.remain)}</td>
+        <td>${r.frm_branch || '—'}</td>
+      </tr>`).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--muted)">ไม่มีข้อมูล</td></tr>';
+  } catch (e) { /* ไม่ critical */ }
+}
+
+shopSelect.addEventListener('change', loadByShop);
 
 // ─────────────────────────── รายสินค้า ───────────────────────────
 const itemSelect = document.getElementById('itemSelect');
@@ -365,28 +480,21 @@ async function loadItemDetail() {
 
 itemSelect.addEventListener('change', loadItemDetail);
 
-function renderShopsTable(rows) {
-  const body = document.getElementById('shopsBody');
-  body.innerHTML = rows.map((r, i) => `
-    <tr>
-      <td>${i + 1}</td><td>${r.shop_code}</td><td>${r.shop_name}</td><td>${r.dm || '—'}</td>
-      <td class="num">${fmtInt(r.today_docs)}</td>
-      <td class="num">${fmtInt(r.today_qty)}</td>
-      <td class="num">${fmtBaht(r.today_amt)}</td>
-      <td class="num">${fmtPct(r.diff_pct)}</td>
-    </tr>`).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--muted)">ยังไม่มีข้อมูล</td></tr>';
-}
-
 function setupAutoRefresh() {
   if (autoTimer) clearInterval(autoTimer);
   if (autoEl.checked && dateEl.value === todayStr()) autoTimer = setInterval(loadSummary, 30000);
 }
 
-dateEl.addEventListener('change', () => { loadSummary(); loadItemOptions(); setupAutoRefresh(); });
+dateEl.addEventListener('change', () => { loadSummary(); loadShopOptions(); loadItemOptions(); setupAutoRefresh(); });
 autoEl.addEventListener('change', setupAutoRefresh);
-document.getElementById('btnRefresh').addEventListener('click', () => { loadSummary(); loadItemDetail(); });
+document.getElementById('btnRefresh').addEventListener('click', () => { loadSummary(); loadByShop(); loadItemDetail(); });
 
-(async function init() { await loadSummary(); await loadItemOptions(); setupAutoRefresh(); })();
+(async function init() {
+  await loadSummary();
+  await loadShopOptions();
+  await loadItemOptions();
+  setupAutoRefresh();
+})();
 </script>
 </body>
 </html>

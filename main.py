@@ -175,47 +175,84 @@ def summary(
 
 @app.get("/api/transfer-in/summary")
 def transfer_in_summary(biz_date: str = Query(...), user: str = Depends(get_current_user)):
-    yday_str = (date.fromisoformat(biz_date) - timedelta(days=1)).isoformat()
-
-    ov = trq.overview(biz_date)
-    ov_y = trq.overview(yday_str)
+    tot = trq.totals(biz_date)
 
     def g(d, k):
         v = d.get(k)
         return float(v) if v is not None else 0.0
 
-    today_amt = g(ov, "total_amt")
-    yday_amt = g(ov_y, "total_amt")
-    diff_pct = (today_amt - yday_amt) / yday_amt * 100 if yday_amt else 0
+    v_in, v_sold, v_void, v_remain = g(tot, "tr_in"), g(tot, "sold"), g(tot, "void_qty"), g(tot, "remain")
+
+    def status_of(r, tr_in):
+        has_status = bool(r["has_status"])
+        online = r["online"]
+        has_qty = tr_in > 0
+        if not has_status:
+            return "has" if has_qty else "empty"
+        if not online:
+            return "offline_stale" if has_qty else "offline"
+        return "has" if has_qty else "empty"
 
     shops_list = []
-    for r in trq.shops(biz_date, yday_str):
-        t_amt = float(r.get("today_amt") or 0)
-        y_amt = float(r.get("yday_amt") or 0)
+    for r in trq.shop_status(biz_date):
+        tr_in = float(r["tr_in"] or 0)
         shops_list.append({
             "shop_code": r["shop_code"], "shop_name": r["shop_name"], "dm": r["dm"],
-            "today_docs": int(r.get("today_docs") or 0),
-            "today_qty": float(r.get("today_qty") or 0),
-            "today_amt": t_amt, "yday_amt": y_amt,
-            "diff_pct": (t_amt - y_amt) / y_amt * 100 if y_amt else None,
+            "status": status_of(r, tr_in),
+            "online": bool(r["online"]) if r["online"] is not None else None,
+            "err_msg": r["err_msg"],
+            "checked_at": str(r["checked_at"]) if r["checked_at"] else None,
+            "doc_cnt": int(r["doc_cnt"]) if r["doc_cnt"] is not None else None,
+            "tr_in": tr_in, "tr_out": float(r["tr_out"] or 0),
+            "sold": float(r["sold"] or 0), "void_qty": float(r["void_qty"] or 0),
+            "remain": float(r["remain"] or 0),
         })
+
+    n_online = sum(1 for r in shops_list if r["online"])
+    n_total = len(shops_list)
+    n_active = sum(1 for r in shops_list if r["tr_in"] > 0)
 
     return {
         "date": biz_date,
         "totals": {
-            "today_amt": today_amt, "yday_amt": yday_amt, "diff_pct": diff_pct,
-            "total_docs": int(g(ov, "total_docs")), "total_lines": int(g(ov, "total_lines")),
-            "total_qty": g(ov, "total_qty"), "shops_with_data": int(g(ov, "shops_with_data")),
-            "distinct_items": int(g(ov, "distinct_items")),
+            "tr_in": v_in, "sold": v_sold, "void_qty": v_void, "remain": v_remain,
+            "n_online": n_online, "n_total": n_total, "n_active": n_active,
         },
         "shops": shops_list,
-        "status": trq.shop_status(biz_date),
+    }
+
+
+@app.get("/api/transfer-in/shop-options")
+def transfer_in_shop_options(biz_date: str = Query(...), user: str = Depends(get_current_user)):
+    return {"shops": trq.shop_opts(biz_date)}
+
+
+@app.get("/api/transfer-in/by-shop")
+def transfer_in_by_shop(
+    biz_date: str = Query(...), branch: str = Query(...),
+    user: str = Depends(get_current_user),
+):
+    rows = trq.by_shop(biz_date, branch)
+    out = [
+        {"item_code": r["item_code"], "item_name": r["item_name"],
+         "tr_in": float(r["tr_in"] or 0), "sold": float(r["sold"] or 0),
+         "void_qty": float(r["void_qty"] or 0), "remain": float(r["remain"] or 0),
+         "frm_branch": r["frm_branch"]}
+        for r in rows
+    ]
+    return {
+        "branch": branch,
+        "total_tr_in": sum(r["tr_in"] for r in out),
+        "total_sold": sum(r["sold"] for r in out),
+        "total_void": sum(r["void_qty"] for r in out),
+        "total_remain": sum(r["remain"] for r in out),
+        "rows": out,
     }
 
 
 @app.get("/api/transfer-in/items")
 def transfer_in_items(biz_date: str = Query(...), user: str = Depends(get_current_user)):
-    return {"items": trq.item_options(biz_date)}
+    return {"items": trq.item_opts(biz_date)}
 
 
 @app.get("/api/transfer-in/item-detail")
@@ -223,18 +260,18 @@ def transfer_in_item_detail(
     biz_date: str = Query(...), item_code: str = Query(...),
     user: str = Depends(get_current_user),
 ):
-    tot = trq.item_total(biz_date, item_code)
-    rows = trq.item_detail(biz_date, item_code)
+    rows = trq.by_item(biz_date, item_code)
+    out = [
+        {"shop_code": r["shop_code"], "shop_name": r["shop_name"],
+         "qty": float(r["qty"] or 0), "amount": float(r["amount"] or 0),
+         "frm_branch": r["frm_branch"]}
+        for r in rows
+    ]
     return {
         "item_code": item_code,
-        "total_qty": float(tot.get("total_qty") or 0),
-        "shop_cnt": int(tot.get("shop_cnt") or 0),
-        "rows": [
-            {"shop_code": r["shop_code"], "shop_name": r["shop_name"],
-             "qty": float(r["qty"] or 0), "amount": float(r["amount"] or 0),
-             "frm_branch": r["frm_branch"]}
-            for r in rows
-        ],
+        "total_qty": sum(r["qty"] for r in out),
+        "shop_cnt": len(out),
+        "rows": out,
     }
 
 
