@@ -49,7 +49,22 @@
                display:flex; align-items:center; gap:8px; margin-bottom:16px; }
 
   main{ margin-left:230px; padding:22px 28px 60px; max-width:1500px; }
-  @media (max-width:860px){ .sidebar{ position:static; width:auto; border-right:none; border-bottom:2px solid #f0ece6; } main{ margin-left:0; } }
+
+  .mobile-topbar{ display:none; }
+  @media (max-width:860px){
+    .mobile-topbar{ display:flex; align-items:center; gap:12px; background:#fff; border-bottom:2px solid #f0ece6;
+      padding:12px 16px; position:sticky; top:0; z-index:25; }
+    .mobile-topbar .hamburger-btn{ background:none; border:none; font-size:22px; cursor:pointer;
+      color:var(--ink); padding:2px 6px; }
+    .mobile-topbar .mt-title{ font-family:'Nunito',sans-serif; font-weight:900; font-size:15px; color:var(--ink); }
+    .sb-overlay{ position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:30;
+      opacity:0; pointer-events:none; transition:opacity .2s; }
+    .sb-overlay.open{ opacity:1; pointer-events:auto; }
+    .sidebar{ position:fixed; top:0; left:0; bottom:0; width:260px; max-width:82vw;
+      transform:translateX(-100%); transition:transform .25s ease; box-shadow:2px 0 24px rgba(0,0,0,.15); z-index:35; }
+    .sidebar.open{ transform:translateX(0); }
+    main{ margin-left:0; }
+  }
 
   .banner{ background:linear-gradient(90deg,#FFF4EC,#FDECF4); border:1px solid #f6d9c9; border-radius:16px;
     padding:16px 22px; margin-bottom:14px; display:flex; align-items:center; justify-content:space-between;
@@ -115,6 +130,12 @@
 <body>
 
 <div id="loadOverlay" class="hidden">กำลังโหลดข้อมูล...</div>
+
+<div class="mobile-topbar">
+  <button class="hamburger-btn" id="btnMobileMenu">☰</button>
+  <span class="mt-title">🚚 Transfer In</span>
+</div>
+<div class="sb-overlay" id="sbOverlay"></div>
 
 <aside class="sidebar">
   <div class="sb-logo">
@@ -278,6 +299,18 @@ document.getElementById('btnLogout').addEventListener('click', () => {
   localStorage.removeItem('sm_token'); localStorage.removeItem('sm_token_exp'); localStorage.removeItem('sm_full_name');
   window.location.href = 'login.html';
 });
+
+const sidebarEl = document.querySelector('.sidebar');
+const sbOverlay = document.getElementById('sbOverlay');
+document.getElementById('btnMobileMenu').addEventListener('click', () => {
+  sidebarEl.classList.add('open'); sbOverlay.classList.add('open');
+});
+sbOverlay.addEventListener('click', () => {
+  sidebarEl.classList.remove('open'); sbOverlay.classList.remove('open');
+});
+document.querySelectorAll('.sb-link').forEach(a => a.addEventListener('click', () => {
+  sidebarEl.classList.remove('open'); sbOverlay.classList.remove('open');
+}));
 
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
