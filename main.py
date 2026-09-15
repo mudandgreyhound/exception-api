@@ -275,43 +275,70 @@ def transfer_in_item_detail(
     }
 
 
+@app.get("/api/petty-cash/filters")
+def petty_cash_filters(user: str = Depends(get_current_user)):
+    return {"branches": pcq.branches()}
+
+
+@app.get("/api/petty-cash/available-dates")
+def petty_cash_available_dates(user: str = Depends(get_current_user)):
+    rows = pcq.available_dates()
+    return {"dates": [str(r["doc_date"]) for r in rows]}
+
+
 @app.get("/api/petty-cash/summary")
-def petty_cash_summary(biz_date: str = Query(...), user: str = Depends(get_current_user)):
-    yday_str = (date.fromisoformat(biz_date) - timedelta(days=1)).isoformat()
+def petty_cash_summary(
+    biz_date: str = Query(...), shops: str = Query(""),
+    user: str = Depends(get_current_user),
+):
+    shop_codes = tuple(s for s in shops.split(",") if s)
 
-    tot = pcq.totals(biz_date)
-    tot_y = pcq.totals(yday_str)
+    detail_rows = pcq.detail(biz_date, shop_codes)
+    branch_rows = pcq.summary_by_shop(biz_date, shop_codes)
+    expen_rows = pcq.by_expense(biz_date, shop_codes)
 
-    shops_list = []
-    for r in pcq.by_shop(biz_date, yday_str):
-        t = float(r.get("today_amt") or 0)
-        y = float(r.get("yday_amt") or 0)
-        shops_list.append({
-            "shop_code": r["shop_code"], "shop_name": r["shop_name"], "dm": r["dm"],
-            "today_amt": t, "yday_amt": y, "today_cnt": int(r.get("today_cnt") or 0),
-            "diff_pct": (t - y) / y * 100 if y else None,
-        })
+    total_amt = sum(float(r["expen_amt"] or 0) for r in detail_rows)
+    total_docs = len({r["doc_no"] for r in detail_rows})
+    total_shops = len(branch_rows)
+    top_expen = expen_rows[0]["expen_des1"] if expen_rows else "-"
 
     return {
         "date": biz_date,
         "totals": {
-            "today_amt": float(tot.get("amt") or 0), "today_cnt": int(tot.get("cnt") or 0),
-            "today_shops": int(tot.get("shops") or 0),
-            "yday_amt": float(tot_y.get("amt") or 0),
+            "total_amt": total_amt, "total_docs": total_docs,
+            "total_shops": total_shops, "top_expen": top_expen,
         },
-        "categories": [
-            {"code": c["expen_code"], "name": c["expen_des1"],
-             "amt": float(c["amt"] or 0), "cnt": int(c["cnt"] or 0)}
-            for c in pcq.by_category(biz_date)
+        "detail": [
+            {"shop_code": r["shop_code"], "shop_name": r["shop_name"],
+             "doc_no": r["doc_no"], "doc_stat": r["doc_stat"],
+             "expen_code": r["expen_code"], "expen_des1": r["expen_des1"],
+             "expen_amt": float(r["expen_amt"] or 0),
+             "reference": r["reference"], "remark": r["remark"]}
+            for r in detail_rows
         ],
-        "shops": shops_list,
-        "recent": [
-            {"doc_date": str(r["doc_date"]), "shop_code": r["shop_code"], "shop_name": r["shop_name"],
-             "doc_no": r["doc_no"], "expen_des1": r["expen_des1"],
-             "expen_amt": float(r["expen_amt"] or 0), "remark": r["remark"]}
-            for r in pcq.recent(biz_date)
+        "by_branch": [
+            {"shop_code": r["shop_code"], "shop_name": r["shop_name"],
+             "doc_cnt": int(r["doc_cnt"] or 0), "amt": float(r["amt"] or 0)}
+            for r in branch_rows
+        ],
+        "by_expense": [
+            {"expen_code": r["expen_code"], "expen_des1": r["expen_des1"],
+             "amt": float(r["amt"] or 0), "cnt": int(r["cnt"] or 0)}
+            for r in expen_rows
         ],
     }
+
+
+@app.get("/api/petty-cash/etl-log")
+def petty_cash_etl_log(user: str = Depends(get_current_user)):
+    rows = pcq.etl_log()
+    return {"rows": [
+        {"run_at": str(r["run_at"]) if r["run_at"] else None,
+         "target_date": str(r["target_date"]) if r["target_date"] else None,
+         "rows_deleted": r["rows_deleted"], "rows_inserted": r["rows_inserted"],
+         "status": r["status"]}
+        for r in rows
+    ]}
 
 
 def _ex_period(fr, to):

@@ -6,7 +6,6 @@
 <title>Petty Cash · Dunkin'</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;0,900;1,800&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.1/chart.umd.min.js"></script>
 <style>
   :root{
     --orange:#FF671F; --orange-dk:#e55a15; --magenta:#E91E8C; --magenta-dk:#CE1E7C;
@@ -47,18 +46,15 @@
   .auto-toggle{ display:flex; align-items:center; gap:6px; font-size:12px; color:var(--muted); font-weight:700; }
   .who{ font-size:12px; color:var(--muted); }
 
+  .date-hint{ display:flex; gap:4px; justify-content:space-between; font-size:16px; margin-top:4px; }
+  .date-hint span{ text-align:center; flex:1; }
+  .date-hint-note{ font-size:10px; color:var(--muted); margin-top:2px; }
+
   .page-title{ font-family:'Nunito',sans-serif; font-weight:900; font-size:20px; color:var(--ink);
-               display:flex; align-items:center; gap:8px; margin-bottom:16px; }
+               display:flex; align-items:center; gap:8px; margin-bottom:4px; }
 
   main{ margin-left:230px; padding:22px 28px 60px; max-width:1500px; }
   @media (max-width:860px){ .sidebar{ position:static; width:auto; border-right:none; border-bottom:2px solid #f0ece6; } main{ margin-left:0; } }
-
-  .banner{ background:linear-gradient(90deg,#FFF4EC,#FDECF4); border:1px solid #f6d9c9; border-radius:16px;
-    padding:16px 22px; margin-bottom:14px; display:flex; align-items:center; justify-content:space-between;
-    flex-wrap:wrap; gap:14px; }
-  .banner .left{ display:flex; align-items:center; gap:26px; flex-wrap:wrap; }
-  .lb{ color:var(--label); font-size:12px; font-weight:700; font-family:'Nunito',sans-serif; }
-  .big{ font-size:26px; font-weight:800; font-family:'Nunito',sans-serif; }
 
   .kpi-row{ display:flex; gap:14px; margin-bottom:16px; flex-wrap:wrap; }
   .card{ background:#fff; border:1px solid #f0ece6; border-radius:14px; padding:14px 18px;
@@ -70,8 +66,6 @@
                    font-family:'Nunito',sans-serif; }
   .section-sub{ font-size:12px; color:var(--muted); margin-bottom:10px; }
   .chart-box{ background:#fff; border-radius:16px; padding:16px; box-shadow:0 2px 20px rgba(0,0,0,.06); }
-  .two-col{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
-  @media (max-width:860px){ .two-col{ grid-template-columns:1fr; } }
 
   table{ width:100%; border-collapse:collapse; font-size:13px; }
   thead th{ background:#FFF3EC; color:var(--orange); font-family:'Nunito',sans-serif; font-size:11px;
@@ -81,18 +75,23 @@
   tbody tr:hover td{ background:#FFF8F5; }
   .tbl-wrap{ background:#fff; border-radius:14px; overflow:hidden; box-shadow:0 1px 8px rgba(0,0,0,.05); }
   .num{ text-align:right; font-variant-numeric:tabular-nums; }
+  .badge{ display:inline-block; padding:2px 8px; border-radius:20px; font-size:11px; font-weight:800; }
+  .badge.ok{ background:#ECFDF3; color:var(--green); }
+  .badge.pending{ background:#FEF3C7; color:#b45309; }
 
-  .pay-legend-row{ display:flex; align-items:center; gap:10px; margin:11px 0; }
-  .dot{ width:12px; height:12px; border-radius:3px; display:inline-block; }
-  .pay-legend-row .name{ flex:1; color:#374151; font-weight:600; }
-  .pay-legend-row .amt{ font-weight:800; color:#111; }
-  .pay-legend-row .pct{ color:var(--muted); width:52px; text-align:right; }
+  .tab-bar{ display:flex; gap:4px; margin-bottom:16px; border-bottom:2px solid #f0ece6; flex-wrap:wrap; }
+  .tab-btn{ background:none; border:none; padding:10px 18px; font-family:'Nunito',sans-serif;
+    font-weight:800; font-size:13px; color:var(--muted); cursor:pointer; border-bottom:3px solid transparent;
+    margin-bottom:-2px; }
+  .tab-btn:hover{ color:var(--orange-dk); }
+  .tab-btn.active{ color:var(--orange); border-bottom-color:var(--orange); }
+  .tab-panel{ display:none; }
+  .tab-panel.active{ display:block; }
 
   #loadOverlay{ position:fixed; inset:0; background:rgba(255,248,220,.7); display:flex; align-items:center;
     justify-content:center; font-family:'Nunito',sans-serif; font-weight:800; color:var(--orange); z-index:50; }
   #errBox{ background:#FFF3EC; border:1.5px solid #FFD9C4; border-radius:14px; color:#c2440a;
     padding:12px 16px; margin-bottom:16px; font-size:13px; }
-
 </style>
 </head>
 <body>
@@ -114,12 +113,19 @@
   </div>
 
   <div class="sb-section field">
-    <label>วันที่</label>
+    <label>📅 วันที่</label>
     <input type="date" id="smDate">
+    <div class="date-hint" id="dateHint"></div>
+    <div class="date-hint-note" id="dateHintNote"></div>
+  </div>
+
+  <div class="sb-section field">
+    <label>🏪 สาขา (ว่าง = ทั้งหมด)</label>
+    <select id="branchFilter" multiple size="6"></select>
   </div>
 
   <div class="sb-section">
-    <label class="auto-toggle"><input type="checkbox" id="smAuto" checked> auto-refresh 30s</label>
+    <label class="auto-toggle"><input type="checkbox" id="smAuto"> auto-refresh 30s</label>
   </div>
 
   <div class="sb-footer">
@@ -130,59 +136,67 @@
 </aside>
 
 <main>
-  <div class="page-title">💰 Petty Cash</div>
+  <div class="page-title">💰 Petty Cash Report</div>
+  <div class="section-sub" id="headerSub" style="margin-bottom:14px"></div>
   <div id="errBox" class="hidden"></div>
 
-  <div class="banner">
-    <div class="left">
-      <div><div class="lb">ยอดใช้จ่ายวันนี้</div>
-           <div class="big" style="color:var(--magenta)" id="valAmt">฿0</div></div>
-    </div>
-    <div style="text-align:right">
-      <div class="lb">เมื่อวาน</div>
-      <div class="val" id="valYday">฿0</div>
-    </div>
-  </div>
-
   <div class="kpi-row">
-    <div class="card"><div class="lb">จำนวนบิล</div><div class="val" id="valCnt">0</div></div>
-    <div class="card"><div class="lb">สาขาที่มีการเบิก</div><div class="val" id="valShops">0</div></div>
+    <div class="card"><div class="lb">💰 TOTAL</div><div class="val" id="kTotal">฿0</div></div>
+    <div class="card"><div class="lb">📄 DOCUMENTS</div><div class="val" id="kDocs">0</div></div>
+    <div class="card"><div class="lb">🏪 BRANCHES</div><div class="val" id="kShops">0</div></div>
+    <div class="card"><div class="lb">📌 TOP ITEM</div><div class="val" id="kTop" style="font-size:15px;line-height:1.3">-</div></div>
   </div>
 
   <hr class="div">
 
-  <div class="two-col">
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="detail">📋 DETAIL</button>
+    <button class="tab-btn" data-tab="branch">🏪 BY BRANCH</button>
+    <button class="tab-btn" data-tab="expense">🏷️ BY EXPENSE</button>
+    <button class="tab-btn" data-tab="etl">🔧 ETL LOG</button>
+  </div>
+
+  <div class="tab-panel active" id="panel-detail">
     <div class="chart-box">
-      <div class="section-title">🧾 ประเภทค่าใช้จ่าย</div>
-      <div class="section-sub">สัดส่วนยอดตามหมวดหมู่ (วันนี้)</div>
-      <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
-        <div style="flex:1;min-width:220px"><canvas id="chartCat"></canvas></div>
-        <div style="flex:1;min-width:220px" id="catLegend"></div>
-      </div>
-    </div>
-    <div class="chart-box">
-      <div class="section-title">🕒 รายการล่าสุด</div>
-      <div class="tbl-wrap" style="max-height:360px;overflow-y:auto">
-        <table>
-          <thead><tr><th>สาขา</th><th>เลขที่</th><th>รายการ</th><th class="num">ยอด</th></tr></thead>
-          <tbody id="recentBody"></tbody>
-        </table>
-      </div>
+      <div class="section-title">📋 รายการทั้งหมด</div>
+      <div class="section-sub" id="detailSub"></div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>สาขา</th><th>เลขที่</th><th>สถานะ</th><th>รหัส</th><th>รายการ</th>
+          <th class="num">จำนวนเงิน</th><th>อ้างอิง</th><th>หมายเหตุ</th></tr></thead>
+        <tbody id="detailBody"></tbody>
+      </table></div>
     </div>
   </div>
 
-  <hr class="div">
+  <div class="tab-panel" id="panel-branch">
+    <div class="chart-box">
+      <div class="section-title">🏪 สรุปรายสาขา</div>
+      <div class="section-sub" id="branchSub"></div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>#</th><th>รหัสสาขา</th><th>สาขา</th><th class="num">จำนวน Doc</th><th class="num">ยอดรวม</th></tr></thead>
+        <tbody id="branchBody"></tbody>
+      </table></div>
+    </div>
+  </div>
 
-  <div class="chart-box">
-    <div class="section-title">🏪 รายสาขา</div>
-    <div class="tbl-wrap">
-      <table>
-        <thead><tr>
-          <th>#</th><th>รหัสสาขา</th><th>สาขา</th><th>DM</th>
-          <th class="num">บิล</th><th class="num">ยอดวันนี้</th><th class="num">เทียบเมื่อวาน %</th>
-        </tr></thead>
-        <tbody id="shopsBody"></tbody>
-      </table>
+  <div class="tab-panel" id="panel-expense">
+    <div class="chart-box">
+      <div class="section-title">🏷️ สรุปตามประเภทค่าใช้จ่าย</div>
+      <div class="section-sub" id="expenseSub"></div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>#</th><th>รหัส</th><th>รายการ</th><th class="num">ยอดรวม</th><th class="num">จำนวนรายการ</th></tr></thead>
+        <tbody id="expenseBody"></tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="panel-etl">
+    <div class="chart-box">
+      <div class="section-title">🔧 ประวัติ ETL</div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>เวลา</th><th>วันที่</th><th class="num">ลบ</th><th class="num">เพิ่ม</th><th>สถานะ</th></tr></thead>
+        <tbody id="etlBody"></tbody>
+      </table></div>
     </div>
   </div>
 </main>
@@ -200,6 +214,15 @@ document.getElementById('btnLogout').addEventListener('click', () => {
   window.location.href = 'login.html';
 });
 
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(`panel-${btn.dataset.tab}`).classList.add('active');
+  });
+});
+
 async function apiGet(path) {
   const res = await fetch(`${API_BASE}${path}`, { headers: { Authorization: `Bearer ${token}` } });
   if (res.status === 401) { localStorage.removeItem('sm_token'); window.location.href = 'login.html'; return null; }
@@ -207,26 +230,63 @@ async function apiGet(path) {
   return res.json();
 }
 
-const dateEl  = document.getElementById('smDate');
-const autoEl  = document.getElementById('smAuto');
-const errBox  = document.getElementById('errBox');
-const overlay = document.getElementById('loadOverlay');
+const dateEl    = document.getElementById('smDate');
+const branchEl  = document.getElementById('branchFilter');
+const autoEl    = document.getElementById('smAuto');
+const errBox    = document.getElementById('errBox');
+const overlay   = document.getElementById('loadOverlay');
 let autoTimer = null;
-let chartCat = null;
+let availDates = new Set();
 
 function todayStr() { return new Date().toISOString().slice(0, 10); }
-dateEl.value = todayStr();
+function addDays(str, n) { const d = new Date(str); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); }
 
-const fmtBaht = (n) => '฿' + Math.round(n).toLocaleString('en-US');
+const fmtBaht = (n) => '฿' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const fmtInt  = (n) => Math.round(n).toLocaleString('en-US');
-const fmtPct  = (n) => (n === null || n === undefined) ? '—' : n.toFixed(1) + '%';
 
-const CAT_PALETTE = ['#FF671F', '#E91E8C', '#3b82f6', '#10b981', '#a855f7', '#f59e0b', '#dc2626', '#0891b2'];
+function renderDateHint() {
+  const sel = dateEl.value;
+  const dow = ["จ", "อ", "พ", "พฤ", "ศ", "ส", "อา"];
+  let html = '';
+  for (let delta = -3; delta <= 3; delta++) {
+    const d = new Date(sel); d.setDate(d.getDate() + delta);
+    const ds = d.toISOString().slice(0, 10);
+    const has = availDates.has(ds);
+    const isSel = ds === sel;
+    const icon = isSel && has ? '🟠' : isSel ? '🔸' : has ? '🟡' : '⚪';
+    html += `<span title="${ds}">${icon}</span>`;
+  }
+  document.getElementById('dateHint').innerHTML = html;
+  const recent = [...availDates].sort().reverse().slice(0, 5).map(d => d.slice(5));
+  document.getElementById('dateHintNote').textContent = recent.length ? `📅 ล่าสุด: ${recent.join(' · ')}` : '';
+}
+
+async function loadFilters() {
+  try {
+    const d = await apiGet('/api/petty-cash/filters');
+    if (!d) return;
+    branchEl.innerHTML = d.branches.map(b => `<option value="${b.shop_code}">${b.shop_code} - ${b.shop_name}</option>`).join('');
+  } catch (e) { /* ไม่ critical */ }
+}
+
+async function loadAvailableDates() {
+  try {
+    const d = await apiGet('/api/petty-cash/available-dates');
+    if (!d) return;
+    availDates = new Set(d.dates);
+    if (availDates.size) dateEl.value = [...availDates].sort().reverse()[0];
+  } catch (e) { /* ไม่ critical */ }
+}
+
+function selectedBranches() {
+  return Array.from(branchEl.selectedOptions).map(o => o.value);
+}
 
 async function loadSummary() {
   overlay.classList.remove('hidden'); errBox.classList.add('hidden');
   try {
-    const d = await apiGet(`/api/petty-cash/summary?biz_date=${dateEl.value}`);
+    const shopsParam = selectedBranches().join(',');
+    const d = await apiGet(`/api/petty-cash/summary?biz_date=${dateEl.value}&shops=${encodeURIComponent(shopsParam)}`);
     if (!d) return;
     render(d);
   } catch (e) { errBox.textContent = e.message; errBox.classList.remove('hidden'); }
@@ -235,76 +295,68 @@ async function loadSummary() {
 
 function render(d) {
   const t = d.totals;
-  document.getElementById('valAmt').textContent = fmtBaht(t.today_amt);
-  document.getElementById('valYday').textContent = fmtBaht(t.yday_amt);
-  document.getElementById('valCnt').textContent = fmtInt(t.today_cnt);
-  document.getElementById('valShops').textContent = fmtInt(t.today_shops);
+  const sel = selectedBranches();
+  document.getElementById('headerSub').textContent =
+    `${dateEl.value} · สาขา: ${sel.length ? sel.join(', ') : 'ทั้งหมด'}`;
 
-  renderCategories(d.categories);
-  renderRecent(d.recent);
-  renderShopsTable(d.shops);
-}
+  document.getElementById('kTotal').textContent = fmtBaht(t.total_amt);
+  document.getElementById('kDocs').textContent = fmtInt(t.total_docs) + ' ใบ';
+  document.getElementById('kShops').textContent = fmtInt(t.total_shops) + ' สาขา';
+  document.getElementById('kTop').textContent = t.top_expen || '-';
 
-function renderCategories(cats) {
-  const names = cats.map(c => c.name || c.code);
-  const vals = cats.map(c => c.amt);
-  const cols = names.map((_, i) => CAT_PALETTE[i % CAT_PALETTE.length]);
-
-  const ctx = document.getElementById('chartCat');
-  if (chartCat) chartCat.destroy();
-  if (names.length) {
-    chartCat = new Chart(ctx, {
-      type: 'doughnut',
-      data: { labels: names, datasets: [{ data: vals, backgroundColor: cols }] },
-      options: { cutout: '58%', plugins: { legend: { display: false } } },
-    });
-  }
-
-  const total = vals.reduce((a, b) => a + b, 0);
-  const legend = document.getElementById('catLegend');
-  legend.innerHTML = cats.map((c, i) => {
-    const pct = total ? (c.amt / total * 100) : 0;
-    return `<div class="pay-legend-row">
-      <span class="dot" style="background:${CAT_PALETTE[i % CAT_PALETTE.length]}"></span>
-      <span class="name">${c.name || c.code}</span>
-      <span class="amt">${fmtBaht(c.amt)}</span>
-      <span class="pct">${pct.toFixed(1)}%</span>
-    </div>`;
-  }).join('') || '<div style="color:var(--muted);font-size:13px">ยังไม่มีข้อมูล</div>';
-}
-
-function renderRecent(rows) {
-  const body = document.getElementById('recentBody');
-  body.innerHTML = rows.map(r => `
-    <tr>
-      <td>${r.shop_code}</td>
+  document.getElementById('detailSub').textContent = `${d.detail.length} รายการ · ยอดรวม ${fmtBaht(t.total_amt)}`;
+  document.getElementById('detailBody').innerHTML = d.detail.map(r => `
+    <tr><td>${r.shop_code} ${r.shop_name && r.shop_name !== r.shop_code ? '- ' + r.shop_name : ''}</td>
       <td>${r.doc_no}</td>
-      <td>${r.expen_des1}</td>
-      <td class="num">${fmtBaht(r.expen_amt)}</td>
-    </tr>`).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--muted)">ยังไม่มีข้อมูล</td></tr>';
+      <td>${String(r.doc_stat) === '1' ? '<span class="badge ok">✅ Export</span>' : '<span class="badge pending">🕐 Pending</span>'}</td>
+      <td>${r.expen_code}</td><td>${r.expen_des1}</td>
+      <td class="num">${fmtBaht(r.expen_amt)}</td><td>${r.reference || '—'}</td><td>${r.remark || '—'}</td></tr>`
+  ).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--muted)">ไม่มีข้อมูล Petty Cash วันที่เลือก</td></tr>';
+
+  document.getElementById('branchSub').textContent = `${d.by_branch.length} สาขา`;
+  document.getElementById('branchBody').innerHTML = d.by_branch.map((r, i) => `
+    <tr><td>${i + 1}</td><td>${r.shop_code}</td><td>${r.shop_name}</td>
+      <td class="num">${fmtInt(r.doc_cnt)}</td><td class="num">${fmtBaht(r.amt)}</td></tr>`
+  ).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--muted)">ไม่มีข้อมูล</td></tr>';
+
+  document.getElementById('expenseSub').textContent = `${d.by_expense.length} ประเภทค่าใช้จ่าย`;
+  document.getElementById('expenseBody').innerHTML = d.by_expense.map((r, i) => `
+    <tr><td>${i + 1}</td><td>${r.expen_code}</td><td>${r.expen_des1}</td>
+      <td class="num">${fmtBaht(r.amt)}</td><td class="num">${fmtInt(r.cnt)}</td></tr>`
+  ).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--muted)">ไม่มีข้อมูล</td></tr>';
 }
 
-function renderShopsTable(rows) {
-  const body = document.getElementById('shopsBody');
-  body.innerHTML = rows.map((r, i) => `
-    <tr>
-      <td>${i + 1}</td><td>${r.shop_code}</td><td>${r.shop_name}</td><td>${r.dm || '—'}</td>
-      <td class="num">${fmtInt(r.today_cnt)}</td>
-      <td class="num">${fmtBaht(r.today_amt)}</td>
-      <td class="num">${fmtPct(r.diff_pct)}</td>
-    </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--muted)">ยังไม่มีข้อมูล</td></tr>';
+async function loadEtlLog() {
+  const d = await apiGet('/api/petty-cash/etl-log');
+  if (!d) return;
+  document.getElementById('etlBody').innerHTML = d.rows.map(r => `
+    <tr><td>${r.run_at ? r.run_at.slice(0, 19) : '—'}</td><td>${r.target_date || '—'}</td>
+      <td class="num">${r.rows_deleted ?? '—'}</td><td class="num">${r.rows_inserted ?? '—'}</td>
+      <td>${r.status || '—'}</td></tr>`
+  ).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--muted)">ยังไม่มี ETL log</td></tr>';
+}
+
+async function loadAll() {
+  renderDateHint();
+  await Promise.all([loadSummary(), loadEtlLog()]);
 }
 
 function setupAutoRefresh() {
   if (autoTimer) clearInterval(autoTimer);
-  if (autoEl.checked && dateEl.value === todayStr()) autoTimer = setInterval(loadSummary, 30000);
+  if (autoEl.checked) autoTimer = setInterval(loadAll, 30000);
 }
 
-dateEl.addEventListener('change', () => { loadSummary(); setupAutoRefresh(); });
+dateEl.addEventListener('change', loadAll);
+branchEl.addEventListener('change', loadSummary);
 autoEl.addEventListener('change', setupAutoRefresh);
-document.getElementById('btnRefresh').addEventListener('click', loadSummary);
+document.getElementById('btnRefresh').addEventListener('click', loadAll);
 
-(async function init() { await loadSummary(); setupAutoRefresh(); })();
+(async function init() {
+  dateEl.value = addDays(todayStr(), -1);
+  await Promise.all([loadFilters(), loadAvailableDates()]);
+  await loadAll();
+  setupAutoRefresh();
+})();
 </script>
 </body>
 </html>
