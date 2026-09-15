@@ -527,7 +527,7 @@ function renderTopMenu(items, flavors) {
     : '<div style="color:var(--muted);font-size:14px">ยังไม่มีข้อมูล</div>';
 
   document.getElementById('topFlavorBody').innerHTML = hasFlavors
-    ? rankRows(flavors, 'flavor_name', 'flavor_code', r => `${fmtInt(r.pick_count)} ครั้ง`, r => `${fmtInt(r.boxes)} กล่อง`)
+    ? rankRows(flavors, 'flavor_name', 'flavor_code', r => `${fmtInt(r.pick_count)} ชิ้น`, r => `${fmtInt(r.boxes)} กล่อง`)
     : '<div style="color:var(--muted);font-size:14px">ยังไม่มีข้อมูล</div>';
 }
 
