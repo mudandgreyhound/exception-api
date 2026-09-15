@@ -151,6 +151,18 @@ def summary(
 
     dm_performance = [] if dm else smq.dm_perf(today_str, yday_str, now_h)
 
+    top_items = [
+        {"item_code": r["item_code"], "item_name": r["item_name"],
+         "qty": float(r["qty"] or 0), "net_amt": float(r["net_amt"] or 0),
+         "bills": int(r["bills"] or 0)}
+        for r in smq.items(today_str)
+    ]
+    top_flavors = [
+        {"flavor_code": r["flavor_code"], "flavor_name": r["flavor_name"],
+         "pick_count": float(r["pick_count"] or 0), "boxes": int(r["boxes"] or 0)}
+        for r in smq.flavors(today_str)
+    ]
+
     return {
         "date": today_str,
         "is_today": is_today,
@@ -169,6 +181,8 @@ def summary(
         "top_shops": shops_list[:top_n],
         "shops_ranking": shops_list,
         "payment": {"groups": pay_groups, "total": sum(pay_groups.values()), "promo": promo[:15]},
+        "top_items": top_items,
+        "top_flavors": top_flavors,
         "dm_performance": dm_performance,
     }
 

@@ -142,6 +142,15 @@
   .pay-legend-row .amt{ font-weight:800; color:#111; }
   .pay-legend-row .pct{ color:var(--muted); width:52px; text-align:right; }
 
+  .rank-row{ display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid #f0ece6; font-size:15px; }
+  .rank-row:last-child{ border-bottom:none; }
+  .rank-num{ width:18px; text-align:right; color:var(--muted); font-weight:700; font-size:12.5px; }
+  .rank-name{ flex:1; }
+  .rank-code{ color:var(--muted); font-size:13px; font-weight:600; }
+  .rank-val{ text-align:right; }
+  .rank-val .v{ font-weight:800; font-size:15px; }
+  .rank-val .s{ font-size:13px; color:var(--muted); }
+
   #loadOverlay{
     position:fixed; inset:0; background:rgba(255,248,220,.7); display:flex; align-items:center;
     justify-content:center; font-family:'Nunito',sans-serif; font-weight:800; color:var(--orange);
@@ -293,6 +302,22 @@
     </div>
 
     <hr class="div">
+
+    <div id="topMenuSection">
+      <div class="section-title">🍩 เมนูขายดี</div>
+      <div class="two-col">
+        <div class="chart-box">
+          <div class="lb" style="margin-bottom:8px">TOP ITEM (ยอดขาย)</div>
+          <div id="topItemBody"></div>
+        </div>
+        <div class="chart-box">
+          <div class="lb" style="margin-bottom:8px">TOP รสชาติในเซ็ต (จำนวนเลือก)</div>
+          <div id="topFlavorBody"></div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="div" id="topMenuDiv">
 
     <div id="dmPerfSection" class="chart-box hidden">
       <div class="section-title">👤 DM Performance</div>
@@ -470,8 +495,40 @@ function render(d) {
   renderTopShops(d.top_shops);
   renderHourly(d.hourly);
   renderPay(d.payment);
+  renderTopMenu(d.top_items, d.top_flavors);
   renderDmPerf(d.dm_performance);
   renderShopsTable(d.shops_ranking);
+}
+
+function rankRows(rows, nameKey, codeKey, valFmt, subFmt) {
+  return rows.map((r, i) => `
+    <div class="rank-row">
+      <div class="rank-num">${i + 1}</div>
+      <div class="rank-name">${r[nameKey] || r[codeKey]}<br><span class="rank-code">${r[codeKey]}</span></div>
+      <div class="rank-val"><div class="v">${valFmt(r)}</div><div class="s">${subFmt(r)}</div></div>
+    </div>`).join('');
+}
+
+function renderTopMenu(items, flavors) {
+  const section = document.getElementById('topMenuSection');
+  const div = document.getElementById('topMenuDiv');
+  const hasItems = items && items.length;
+  const hasFlavors = flavors && flavors.length;
+  if (!hasItems && !hasFlavors) {
+    section.classList.add('hidden');
+    div.classList.add('hidden');
+    return;
+  }
+  section.classList.remove('hidden');
+  div.classList.remove('hidden');
+
+  document.getElementById('topItemBody').innerHTML = hasItems
+    ? rankRows(items, 'item_name', 'item_code', r => fmtBaht(r.net_amt), r => `${fmtInt(r.bills)} บิล`)
+    : '<div style="color:var(--muted);font-size:14px">ยังไม่มีข้อมูล</div>';
+
+  document.getElementById('topFlavorBody').innerHTML = hasFlavors
+    ? rankRows(flavors, 'flavor_name', 'flavor_code', r => `${fmtInt(r.pick_count)} ครั้ง`, r => `${fmtInt(r.boxes)} กล่อง`)
+    : '<div style="color:var(--muted);font-size:14px">ยังไม่มีข้อมูล</div>';
 }
 
 function renderTopShops(rows) {

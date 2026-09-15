@@ -118,6 +118,22 @@ def tender(biz):
     """, (biz,))
 
 
+def items(biz, top_n=8):
+    return query("""
+        SELECT item_code, item_name, qty, net_amt, bills
+        FROM sale_monitor_item WHERE biz_date=%s
+        ORDER BY net_amt DESC LIMIT %s
+    """, (biz, top_n))
+
+
+def flavors(biz, top_n=8):
+    return query("""
+        SELECT flavor_code, flavor_name, pick_count, boxes
+        FROM sale_monitor_flavor WHERE biz_date=%s
+        ORDER BY pick_count DESC LIMIT %s
+    """, (biz, top_n))
+
+
 # จัดกลุ่มวิธีจ่ายเงิน — logic เดิมจาก sm_pay_group ใน exception_report.py
 # (เฉพาะ "เงินรับจริง" = CSH+CRD ; คูปอง/ส่วนลดแยกต่างหาก)
 def pay_group(tender_rows):
