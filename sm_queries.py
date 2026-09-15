@@ -155,14 +155,14 @@ def pay_group(tender_rows):
         if tt == "CHG":
             chg += net_amt
             continue
-        if tt == "CPN":
+        if tt != "CRD":
+            # ทุก tendtype ที่ไม่ใช่เงินรับจริง (CSH/CHG/CRD) ถือเป็นส่วนลด/คูปอง
+            # ครอบคลุม CPN/ITD/MEM/BDP/VC และ tendtype อื่นที่อาจเพิ่มมาทีหลังอัตโนมัติ
             key = r.get("card_name") or ""
             slot = promo_map.setdefault(key, {"card_name": key, "net_amt": 0.0, "bills": 0.0})
             slot["net_amt"] += net_amt
             slot["bills"] += bills
             continue
-        if tt != "CRD":
-            continue  # ITD/MEM/BDP/VC = ส่วนลด ไม่ใช่เงินรับ
 
         if tc == "T056" or "QR" in cn or "PROMPT" in cn:
             grp = "QR PromptPay"
