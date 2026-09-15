@@ -46,6 +46,19 @@
   .auto-toggle{ display:flex; align-items:center; gap:6px; font-size:12px; color:var(--muted); font-weight:700; }
   .who{ font-size:12px; color:var(--muted); }
 
+  .combo-chips{ display:flex; flex-wrap:wrap; gap:4px; margin-bottom:5px; }
+  .combo-chip{ display:flex; align-items:center; gap:4px; background:#FFF3EC; border:1px solid #FFD9C4;
+    color:var(--orange-dk); border-radius:14px; padding:2px 6px 2px 9px; font-size:11px; font-weight:700; }
+  .combo-chip button{ background:none; border:none; color:var(--orange-dk); cursor:pointer; font-size:13px;
+    padding:0 2px; line-height:1; }
+  .combo-wrap{ position:relative; }
+  .combo-list{ position:absolute; left:0; right:0; top:calc(100% + 4px); background:#fff;
+    border:1.5px solid var(--border); border-radius:10px; max-height:220px; overflow-y:auto;
+    box-shadow:0 4px 16px rgba(0,0,0,.1); z-index:30; }
+  .combo-item{ padding:7px 10px; font-size:12px; cursor:pointer; color:#374151; }
+  .combo-item:hover{ background:#FFF8F5; }
+  .combo-empty{ padding:8px 10px; font-size:12px; color:var(--muted); }
+
   .date-hint{ display:flex; gap:4px; justify-content:space-between; font-size:16px; margin-top:4px; }
   .date-hint span{ text-align:center; flex:1; }
   .date-hint-note{ font-size:10px; color:var(--muted); margin-top:2px; }
@@ -121,7 +134,11 @@
 
   <div class="sb-section field">
     <label>🏪 สาขา (ว่าง = ทั้งหมด)</label>
-    <select id="branchFilter" multiple size="6"></select>
+    <div class="combo-chips" id="branchChips"></div>
+    <div class="combo-wrap">
+      <input type="text" id="branchSearch" placeholder="พิมพ์รหัส/ชื่อสาขา...">
+      <div class="combo-list hidden" id="branchList"></div>
+    </div>
   </div>
 
   <div class="sb-section">
@@ -230,11 +247,15 @@ async function apiGet(path) {
   return res.json();
 }
 
-const dateEl    = document.getElementById('smDate');
-const branchEl  = document.getElementById('branchFilter');
+const dateEl      = document.getElementById('smDate');
+const branchSearchEl = document.getElementById('branchSearch');
+const branchListEl   = document.getElementById('branchList');
+const branchChipsEl  = document.getElementById('branchChips');
 const autoEl    = document.getElementById('smAuto');
 const errBox    = document.getElementById('errBox');
 const overlay   = document.getElementById('loadOverlay');
+let allBranches = [];
+let selectedBranchCodes = [];
 let autoTimer = null;
 let availDates = new Set();
 
@@ -265,9 +286,50 @@ async function loadFilters() {
   try {
     const d = await apiGet('/api/petty-cash/filters');
     if (!d) return;
-    branchEl.innerHTML = d.branches.map(b => `<option value="${b.shop_code}">${b.shop_code} - ${b.shop_name}</option>`).join('');
+    allBranches = d.branches;
   } catch (e) { /* ไม่ critical */ }
 }
+
+function renderBranchChips() {
+  branchChipsEl.innerHTML = selectedBranchCodes.map(code => {
+    const b = allBranches.find(x => x.shop_code === code);
+    const label = b ? `${b.shop_code} - ${b.shop_name}` : code;
+    return `<span class="combo-chip">${label}<button type="button" data-code="${code}">×</button></span>`;
+  }).join('');
+  branchChipsEl.querySelectorAll('button').forEach(btn => btn.addEventListener('click', () => {
+    selectedBranchCodes = selectedBranchCodes.filter(c => c !== btn.dataset.code);
+    renderBranchChips();
+    loadSummary();
+  }));
+}
+
+function renderBranchList(kw) {
+  const k = kw.trim().toLowerCase();
+  const matches = allBranches.filter(b =>
+    !selectedBranchCodes.includes(b.shop_code) &&
+    (!k || b.shop_code.toLowerCase().includes(k) || (b.shop_name || '').toLowerCase().includes(k))
+  ).slice(0, 30);
+  if (!matches.length) {
+    branchListEl.innerHTML = `<div class="combo-empty">${k ? 'ไม่พบสาขา' : 'พิมพ์เพื่อค้นหาสาขา'}</div>`;
+  } else {
+    branchListEl.innerHTML = matches.map(b =>
+      `<div class="combo-item" data-code="${b.shop_code}">${b.shop_code} - ${b.shop_name}</div>`).join('');
+  }
+  branchListEl.classList.remove('hidden');
+  branchListEl.querySelectorAll('.combo-item').forEach(el => el.addEventListener('click', () => {
+    selectedBranchCodes.push(el.dataset.code);
+    branchSearchEl.value = '';
+    branchListEl.classList.add('hidden');
+    renderBranchChips();
+    loadSummary();
+  }));
+}
+
+branchSearchEl.addEventListener('focus', () => renderBranchList(branchSearchEl.value));
+branchSearchEl.addEventListener('input', () => renderBranchList(branchSearchEl.value));
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.combo-wrap')) branchListEl.classList.add('hidden');
+});
 
 async function loadAvailableDates() {
   try {
@@ -279,7 +341,7 @@ async function loadAvailableDates() {
 }
 
 function selectedBranches() {
-  return Array.from(branchEl.selectedOptions).map(o => o.value);
+  return selectedBranchCodes;
 }
 
 async function loadSummary() {
@@ -347,7 +409,6 @@ function setupAutoRefresh() {
 }
 
 dateEl.addEventListener('change', loadAll);
-branchEl.addEventListener('change', loadSummary);
 autoEl.addEventListener('change', setupAutoRefresh);
 document.getElementById('btnRefresh').addEventListener('click', loadAll);
 
