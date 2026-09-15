@@ -18,16 +18,28 @@
   body{ margin:0; background:var(--cream); color:var(--ink); font-family:'Sarabun','Nunito',sans-serif; }
   .hidden{display:none !important}
 
-  .topbar{ background:#fff; border-bottom:2px solid #f0ece6; padding:14px 24px;
-           display:flex; align-items:center; gap:16px; flex-wrap:wrap; position:sticky; top:0; z-index:10; }
-  .brand{ font-family:'Nunito',sans-serif; font-weight:900; font-size:18px; color:var(--red);
-          display:flex; align-items:center; gap:8px; margin-right:8px; }
-  .field{ display:flex; flex-direction:column; gap:3px; }
+  .sidebar{ position:fixed; top:0; left:0; bottom:0; width:230px; background:#fff;
+    border-right:2px solid #f0ece6; padding:22px 0 16px; overflow-y:auto;
+    display:flex; flex-direction:column; z-index:10; }
+  .sb-logo{ padding:0 20px 16px; margin-bottom:10px; border-bottom:1px solid #f0ece6; text-align:center; }
+  .sb-logo img{ max-width:150px; width:100%; }
+  .sb-sub{ font-family:'Nunito',sans-serif; font-weight:800; font-size:10px; letter-spacing:2px;
+           color:var(--muted); margin-top:6px; }
+  .sb-section{ padding:0 20px; margin-bottom:16px; }
+  .sb-label{ font-family:'Nunito',sans-serif; font-size:10px; font-weight:800; letter-spacing:1px;
+             text-transform:uppercase; color:var(--muted); margin-bottom:7px; }
+  .sb-link{ display:flex; align-items:center; gap:9px; padding:10px 12px; margin:2px -12px;
+            border-radius:10px; color:#374151; text-decoration:none; font-weight:700;
+            font-family:'Nunito',sans-serif; font-size:13px; }
+  .sb-link:hover{ background:#FFF8F5; }
+  .sb-link.active{ color:var(--red); background:#FEF2F2; }
+  .field{ display:flex; flex-direction:column; gap:5px; }
   .field label{ font-family:'Nunito',sans-serif; font-size:10px; font-weight:800; letter-spacing:1px;
                 text-transform:uppercase; color:var(--muted); }
-  .field select, .field input{ padding:8px 10px; border:1.5px solid var(--border); border-radius:10px;
+  .field select, .field input{ padding:8px 10px; border:1.5px solid var(--border); border-radius:10px; width:100%;
     background:var(--cream); font-family:'Sarabun',sans-serif; font-size:13px; color:var(--ink); }
-  .topbar .spacer{ flex:1; }
+  .sb-footer{ margin-top:auto; padding:14px 20px 0; border-top:1px solid #f0ece6;
+              display:flex; flex-direction:column; gap:8px; }
   .chip-btn{ border:none; border-radius:25px; padding:9px 18px; font-family:'Nunito',sans-serif;
     font-weight:800; font-size:12px; letter-spacing:.5px; cursor:pointer; transition:transform .15s; }
   .chip-btn:hover{ transform:translateY(-1px); }
@@ -35,7 +47,11 @@
   .auto-toggle{ display:flex; align-items:center; gap:6px; font-size:12px; color:var(--muted); font-weight:700; }
   .who{ font-size:12px; color:var(--muted); }
 
-  main{ padding:20px 24px 60px; max-width:1400px; margin:0 auto; }
+  .page-title{ font-family:'Nunito',sans-serif; font-weight:900; font-size:20px; color:var(--ink);
+               display:flex; align-items:center; gap:8px; margin-bottom:16px; }
+
+  main{ margin-left:230px; padding:22px 28px 60px; max-width:1500px; }
+  @media (max-width:860px){ .sidebar{ position:static; width:auto; border-right:none; border-bottom:2px solid #f0ece6; } main{ margin-left:0; } }
 
   .banner{ background:linear-gradient(90deg,#FEF2F2,#FDECF4); border:1px solid #fecaca; border-radius:16px;
     padding:16px 22px; margin-bottom:14px; display:flex; align-items:center; justify-content:space-between;
@@ -69,56 +85,44 @@
   #errBox{ background:#FFF3EC; border:1.5px solid #FFD9C4; border-radius:14px; color:#c2440a;
     padding:12px 16px; margin-bottom:16px; font-size:13px; }
 
-  .hamburger-btn{ background:none; border:none; font-size:22px; cursor:pointer; color:var(--ink);
-                   padding:4px 10px; border-radius:8px; }
-  .hamburger-btn:hover{ background:#FFF3EC; }
-  .nav-overlay{ position:fixed; inset:0; background:rgba(0,0,0,.3); z-index:99;
-                opacity:0; pointer-events:none; transition:opacity .2s; }
-  .nav-overlay.open{ opacity:1; pointer-events:auto; }
-  .nav-drawer{ position:fixed; top:0; left:0; bottom:0; width:250px; background:#fff;
-               box-shadow:2px 0 24px rgba(0,0,0,.15); transform:translateX(-100%);
-               transition:transform .25s ease; z-index:100; padding:18px 0; overflow-y:auto; }
-  .nav-drawer.open{ transform:translateX(0); }
-  .nav-drawer .nav-title{ padding:0 20px 14px; font-family:'Nunito',sans-serif; font-weight:900;
-                           color:var(--orange); font-size:15px; border-bottom:1px solid #f0ece6; margin-bottom:8px; }
-  .nav-drawer a{ display:flex; align-items:center; gap:10px; padding:13px 20px; color:#374151;
-                 text-decoration:none; font-weight:700; font-family:'Nunito',sans-serif; font-size:14px;
-                 border-left:3px solid transparent; }
-  .nav-drawer a:hover{ background:#FFF8F5; }
-  .nav-drawer a.active{ color:var(--red); border-left-color:var(--red); background:#FEF2F2; }
 </style>
 </head>
 <body>
 
 <div id="loadOverlay" class="hidden">กำลังโหลดข้อมูล...</div>
 
-<div class="nav-overlay" id="navOverlay"></div>
-<nav class="nav-drawer" id="navDrawer">
-  <div class="nav-title">📊 GD DASHBOARD</div>
-  <a href="index.html">📈 Sale Monitor</a>
-  <a href="transfer-in.html">🚚 Transfer In</a>
-  <a href="exception.html" class="active">⚠️ Exception Report</a>
-  <a href="petty-cash.html">💰 Petty Cash</a>
-</nav>
+<aside class="sidebar">
+  <div class="sb-logo">
+    <img src="assets/dunkin_logo.png" alt="Dunkin'">
+    <div class="sb-sub">EXCEPTION REPORT</div>
+  </div>
 
-<div class="topbar">
-  <button class="hamburger-btn" id="btnMenu">☰</button>
-  <div class="brand">⚠️ EXCEPTION REPORT</div>
+  <div class="sb-section">
+    <div class="sb-label">หน้า</div>
+    <a href="index.html" class="sb-link">📈 Sale Monitor</a>
+    <a href="transfer-in.html" class="sb-link">🚚 Transfer In</a>
+    <a href="exception.html" class="sb-link active">⚠️ Exception Report</a>
+    <a href="petty-cash.html" class="sb-link">💰 Petty Cash</a>
+  </div>
 
-  <div class="field">
+  <div class="sb-section field">
     <label>วันที่</label>
     <input type="date" id="smDate">
   </div>
 
-  <label class="auto-toggle"><input type="checkbox" id="smAuto" checked> auto-refresh 30s</label>
+  <div class="sb-section">
+    <label class="auto-toggle"><input type="checkbox" id="smAuto" checked> auto-refresh 30s</label>
+  </div>
 
-  <div class="spacer"></div>
-  <span class="who" id="whoLabel"></span>
-  <button class="chip-btn ghost" id="btnRefresh">🔄 REFRESH</button>
-  <button class="chip-btn ghost" id="btnLogout">ออกจากระบบ</button>
-</div>
+  <div class="sb-footer">
+    <span class="who" id="whoLabel"></span>
+    <button class="chip-btn ghost" id="btnRefresh">🔄 REFRESH</button>
+    <button class="chip-btn ghost" id="btnLogout">ออกจากระบบ</button>
+  </div>
+</aside>
 
 <main>
+  <div class="page-title">⚠️ Exception Report</div>
   <div id="errBox" class="hidden"></div>
   <div style="background:#FFF3EC;border:1.5px solid #FFD9C4;border-radius:14px;color:#92400e;padding:10px 16px;margin-bottom:14px;font-size:12px">
     ตอนนี้ Exception Report แสดงเฉพาะ "บิลที่ถูก void" (fact_void) — ยังไม่ครอบคลุม exception ประเภทอื่น
@@ -175,15 +179,6 @@ document.getElementById('btnLogout').addEventListener('click', () => {
   localStorage.removeItem('sm_token'); localStorage.removeItem('sm_token_exp'); localStorage.removeItem('sm_full_name');
   window.location.href = 'login.html';
 });
-document.getElementById('btnMenu').addEventListener('click', () => {
-  document.getElementById('navDrawer').classList.add('open');
-  document.getElementById('navOverlay').classList.add('open');
-});
-document.getElementById('navOverlay').addEventListener('click', () => {
-  document.getElementById('navDrawer').classList.remove('open');
-  document.getElementById('navOverlay').classList.remove('open');
-});
-
 async function apiGet(path) {
   const res = await fetch(`${API_BASE}${path}`, { headers: { Authorization: `Bearer ${token}` } });
   if (res.status === 401) { localStorage.removeItem('sm_token'); window.location.href = 'login.html'; return null; }
