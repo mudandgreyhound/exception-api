@@ -169,7 +169,7 @@
   <div class="tab-panel active" id="panel-status">
     <div class="chart-box">
       <div class="section-title">🏬 สถานะสาขา</div>
-      <div class="section-sub">สถานะ sync วันนี้ — offline/error ขึ้นก่อน</div>
+      <div class="section-sub">สถานะ sync วันนี้ — แสดงเฉพาะสาขาที่ออนไลน์, error ขึ้นก่อน</div>
       <div class="tbl-wrap">
         <table>
           <thead><tr>
@@ -313,7 +313,7 @@ function renderTopShops(rows) {
 
 function renderStatus(rows) {
   const body = document.getElementById('statusBody');
-  body.innerHTML = (rows || []).map(r => {
+  body.innerHTML = (rows || []).filter(r => r.online).map(r => {
     let badge;
     if (!r.online) badge = '<span class="badge off">offline</span>';
     else if (r.err_msg) badge = '<span class="badge err">มี error</span>';
